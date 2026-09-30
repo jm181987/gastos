@@ -1,0 +1,14 @@
+BEGIN;
+ALTER TABLE monthly_budgets DROP CONSTRAINT IF EXISTS monthly_budgets_pkey;
+ALTER TABLE monthly_budgets ADD CONSTRAINT monthly_budgets_pkey PRIMARY KEY(user_id,year,month);
+ALTER TABLE monthly_closures DROP CONSTRAINT IF EXISTS monthly_closures_pkey;
+ALTER TABLE monthly_closures ADD CONSTRAINT monthly_closures_pkey PRIMARY KEY(user_id,year,month);
+ALTER TABLE categories DROP CONSTRAINT IF EXISTS categories_name_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_categories_user_name ON categories(user_id,name);
+ALTER TABLE accounts DROP CONSTRAINT IF EXISTS accounts_name_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_accounts_user_name ON accounts(user_id,name);
+ALTER TABLE credit_cards DROP CONSTRAINT IF EXISTS credit_cards_name_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_cards_user_name ON credit_cards(user_id,name);
+ALTER TABLE tags DROP CONSTRAINT IF EXISTS tags_name_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_tags_user_name ON tags(user_id,name);
+COMMIT;
