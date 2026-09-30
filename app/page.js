@@ -4,6 +4,12 @@ import { addExpense, addIncome, updateExpense, updateIncome, deleteExpense, dele
 export const dynamic = 'force-dynamic';
 
 const money = (n) => new Intl.NumberFormat('es-UY',{style:'currency',currency:'UYU',maximumFractionDigits:2}).format(Number(n||0));
+const dateValue = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value.slice(0,10);
+  const d = new Date(value);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+};
 
 function recommendations({ income, expense, savingsRate, topCategory, fixedShare }) {
   const out = [];
@@ -25,6 +31,10 @@ export default async function Home({ searchParams }) {
   const from = `${year}-${String(month).padStart(2,'0')}-01`;
   const next = new Date(Date.UTC(year, month, 1));
   const to = next.toISOString().slice(0,10);
+  const today = new Date();
+  const selectedDate = year === today.getFullYear() && month === today.getMonth()+1
+    ? today.toISOString().slice(0,10)
+    : from;
 
   const [inc, exp, cats, monthly, recentInc, recentExp, annual] = await Promise.all([
     pool.query('SELECT COALESCE(SUM(amount),0) total FROM income WHERE occurred_on >= $1 AND occurred_on < $2',[from,to]),
@@ -90,7 +100,7 @@ export default async function Home({ searchParams }) {
           <input name="concept" placeholder="Ej. Sueldo septiembre" required />
           <select name="source" defaultValue="sueldo"><option value="sueldo">Sueldo</option><option value="comision">Comisión</option><option value="bonus">Bonus</option><option value="extra">Extra</option></select>
           <input name="amount" type="number" step="0.01" min="0" placeholder="Monto" required />
-          <input name="occurred_on" type="date" defaultValue={new Date().toISOString().slice(0,10)} required />
+          <input name="occurred_on" type="date" defaultValue={selectedDate} required />
           <button>Agregar</button>
         </form>
         <div className="movement-list">
@@ -98,7 +108,7 @@ export default async function Home({ searchParams }) {
           {recentInc.rows.map(r=><div className="movement" key={r.id}>
             <form action={updateIncome} className="edit-row">
               <input type="hidden" name="id" value={r.id}/><input type="hidden" name="view_year" value={year}/><input type="hidden" name="view_month" value={month}/>
-              <input name="occurred_on" type="date" defaultValue={String(r.occurred_on).slice(0,10)} required/>
+              <input name="occurred_on" type="date" defaultValue={dateValue(r.occurred_on)} required/>
               <input name="concept" defaultValue={r.concept} required/>
               <select name="source" defaultValue={r.source}><option value="sueldo">Sueldo</option><option value="comision">Comisión</option><option value="bonus">Bonus</option><option value="extra">Extra</option></select>
               <input name="amount" type="number" step="0.01" min="0" defaultValue={Number(r.amount)} required/>
@@ -127,7 +137,7 @@ export default async function Home({ searchParams }) {
           <option>Alimentación</option><option>Vivienda</option><option>Servicios</option><option>Transporte</option><option>Salud</option><option>Ocio</option><option>Compras</option><option>Deudas</option><option>Suscripciones</option><option>Educación</option><option>Otros</option>
         </select>
         <input name="amount" type="number" step="0.01" min="0" placeholder="Monto" required />
-        <input name="occurred_on" type="date" defaultValue={new Date().toISOString().slice(0,10)} required />
+        <input name="occurred_on" type="date" defaultValue={selectedDate} required />
         <button>Agregar</button>
       </form>
     </section>
@@ -172,7 +182,7 @@ export default async function Home({ searchParams }) {
         {recentExp.rows.map(r=><div className="movement" key={r.id}>
           <form action={updateExpense} className="edit-row">
             <input type="hidden" name="id" value={r.id}/><input type="hidden" name="view_year" value={year}/><input type="hidden" name="view_month" value={month}/>
-            <input name="occurred_on" type="date" defaultValue={String(r.occurred_on).slice(0,10)} required/>
+            <input name="occurred_on" type="date" defaultValue={dateValue(r.occurred_on)} required/>
             <input name="concept" defaultValue={r.concept} required/>
             <select name="category" defaultValue={r.category}><option>Alimentación</option><option>Vivienda</option><option>Servicios</option><option>Transporte</option><option>Salud</option><option>Ocio</option><option>Compras</option><option>Deudas</option><option>Suscripciones</option><option>Educación</option><option>Otros</option></select>
             <input name="amount" type="number" step="0.01" min="0" defaultValue={Number(r.amount)} required/>
