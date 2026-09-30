@@ -82,10 +82,4 @@ CREATE INDEX IF NOT EXISTS ix_income_account ON income(account_id);
 CREATE INDEX IF NOT EXISTS ix_expense_account ON expense(account_id);
 CREATE INDEX IF NOT EXISTS ix_expense_card ON expense(credit_card_id);
 CREATE INDEX IF NOT EXISTS ix_expense_installment ON expense(installment_group);
-DO $ BEGIN
- IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='knj_gastos_gastos_usr') THEN
-  GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO knj_gastos_gastos_usr;
-  GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO knj_gastos_gastos_usr;
- END IF;
-END $;
 COMMIT;
