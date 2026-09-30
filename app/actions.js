@@ -1,9 +1,9 @@
 'use server';
 import { pool } from '../lib/db';
 import { revalidatePath } from 'next/cache';
-const done=()=>revalidatePath('/'),n=v=>Number(v||0),s=v=>String(v||'').trim();
-export async function addIncome(fd){await pool.query('INSERT INTO income(concept,source,amount,occurred_on,status) VALUES($1,$2,$3,$4,$5)',[s(fd.get('concept')),s(fd.get('source'))||'extra',n(fd.get('amount')),s(fd.get('occurred_on')),s(fd.get('status'))||'pagado']);done()}
-export async function addExpense(fd){await pool.query('INSERT INTO expense(concept,category,amount,occurred_on,status) VALUES($1,$2,$3,$4,$5)',[s(fd.get('concept')),s(fd.get('category')),n(fd.get('amount')),s(fd.get('occurred_on')),s(fd.get('status'))||'pagado']);done()}
+const done=()=>revalidatePath('/'),n=v=>Number(v||0),s=v=>String(v||'').trim(),date=v=>{const x=s(v);return /^\d{4}-\d{2}-\d{2}$/.test(x)?x:new Date().toISOString().slice(0,10)};
+export async function addIncome(fd){await pool.query('INSERT INTO income(concept,source,amount,occurred_on,status) VALUES($1,$2,$3,$4,$5)',[s(fd.get('concept')),s(fd.get('source'))||'extra',n(fd.get('amount')),date(fd.get('occurred_on')),s(fd.get('status'))||'pagado']);done()}
+export async function addExpense(fd){await pool.query('INSERT INTO expense(concept,category,amount,occurred_on,status) VALUES($1,$2,$3,$4,$5)',[s(fd.get('concept')),s(fd.get('category')),n(fd.get('amount')),date(fd.get('occurred_on')),s(fd.get('status'))||'pagado']);done()}
 export async function updateIncome(fd){await pool.query('UPDATE income SET concept=$1,source=$2,amount=$3,occurred_on=$4,status=$5 WHERE id=$6',[s(fd.get('concept')),s(fd.get('source')),n(fd.get('amount')),s(fd.get('occurred_on')),s(fd.get('status')),n(fd.get('id'))]);done()}
 export async function updateExpense(fd){await pool.query('UPDATE expense SET concept=$1,category=$2,amount=$3,occurred_on=$4,status=$5 WHERE id=$6',[s(fd.get('concept')),s(fd.get('category')),n(fd.get('amount')),s(fd.get('occurred_on')),s(fd.get('status')),n(fd.get('id'))]);done()}
 export async function deleteIncome(fd){await pool.query('UPDATE income SET deleted_at=NOW() WHERE id=$1',[n(fd.get('id'))]);done()}
