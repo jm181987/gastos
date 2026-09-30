@@ -9,5 +9,4 @@ CREATE TABLE IF NOT EXISTS monthly_budgets(
   amount NUMERIC(14,2) NOT NULL CHECK(amount>=0),
   PRIMARY KEY(year,month)
 );
-GRANT ALL PRIVILEGES ON TABLE monthly_budgets TO gestor_app;
 COMMIT;
