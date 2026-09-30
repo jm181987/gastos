@@ -3,7 +3,7 @@ import { addExpense, addIncome } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-const money = (n) => new Intl.NumberFormat('es-UY',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(Number(n||0));
+const money = (n) => new Intl.NumberFormat('es-UY',{style:'currency',currency:'UYU',maximumFractionDigits:2}).format(Number(n||0));
 
 function recommendations({ income, expense, savingsRate, topCategory, fixedShare }) {
   const out = [];
@@ -62,11 +62,15 @@ export default async function Home({ searchParams }) {
         <h1>Gestor de gastos</h1>
         <div className="muted">Control mensual y anual de lo que entra, lo que sale y dónde mejorar.</div>
       </div>
-      <div className="filters">
-        <a href={`/?year=${year-1}&month=${month}`}>← {year-1}</a>
-        <a href={`/?year=${year}&month=${month}`}>{monthNames[month-1]} {year}</a>
-        <a href={`/?year=${year+1}&month=${month}`}>{year+1} →</a>
-      </div>
+      <form className="filters" method="GET">
+        <select name="month" defaultValue={String(month)} aria-label="Mes">
+          {monthNames.map((name,i)=><option key={name} value={i+1}>{name}</option>)}
+        </select>
+        <select name="year" defaultValue={String(year)} aria-label="Año">
+          {Array.from({length:11},(_,i)=>year-5+i).map(y=><option key={y} value={y}>{y}</option>)}
+        </select>
+        <button type="submit">Ver período</button>
+      </form>
     </div>
 
     <section className="grid kpis">
