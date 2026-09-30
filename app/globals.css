@@ -23,3 +23,14 @@ body{background:var(--bg);color:var(--text);transition:background .18s,color .18
 @media(max-width:1180px){.edit-row{grid-template-columns:repeat(2,minmax(0,1fr))}.edit-row button{width:100%}}
 @media(max-width:850px){.cols{grid-template-columns:1fr}.form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.movement summary{white-space:normal}.edit-row,.form{grid-template-columns:1fr}.card{overflow:hidden}}
+
+/* Editor de movimientos: layout contenido dentro de cada tarjeta */
+.edit-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(0,1fr);gap:10px;padding:14px;width:100%;max-width:100%;min-width:0;border-top:1px solid var(--border)}
+.edit-form label{display:flex;flex-direction:column;gap:5px;min-width:0;width:100%}
+.edit-form label span{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.edit-form input,.edit-form select{display:block;width:100%;max-width:100%;min-width:0;height:40px;border-radius:8px;border:1px solid var(--border);background:var(--input);color:var(--text);padding:8px 9px}
+.edit-form .save-btn{width:100%;height:40px;align-self:end;border:0;border-radius:8px;background:#4b6bfb;color:#fff;font-weight:700;cursor:pointer}
+.movement>form:last-child{padding:0 14px 14px}
+.movement .delete-btn{width:auto;margin:0;padding:8px 12px}
+@media(max-width:1100px){.edit-form{grid-template-columns:repeat(2,minmax(0,1fr))}.edit-form .save-btn{grid-column:1/-1}}
+@media(max-width:700px){.edit-form{grid-template-columns:1fr;padding:12px}.edit-form .save-btn{grid-column:auto}.movement>form:last-child{padding:0 12px 12px}.movement .delete-btn{width:100%}}
