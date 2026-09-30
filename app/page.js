@@ -1,5 +1,5 @@
 import { pool } from '../lib/db';
-import { addExpense, addIncome } from './actions';
+import { addExpense, addIncome, updateExpense, updateIncome, deleteExpense, deleteIncome } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,8 +36,8 @@ export default async function Home({ searchParams }) {
         COALESCE((SELECT SUM(amount) FROM income i WHERE EXTRACT(YEAR FROM i.occurred_on)=$1 AND EXTRACT(MONTH FROM i.occurred_on)=m.m),0) income,
         COALESCE((SELECT SUM(amount) FROM expense e WHERE EXTRACT(YEAR FROM e.occurred_on)=$1 AND EXTRACT(MONTH FROM e.occurred_on)=m.m),0) expense
       FROM m ORDER BY m.m`,[year]),
-    pool.query('SELECT * FROM income ORDER BY occurred_on DESC, id DESC LIMIT 8'),
-    pool.query('SELECT * FROM expense ORDER BY occurred_on DESC, id DESC LIMIT 8'),
+    pool.query('SELECT * FROM income WHERE occurred_on >= $1 AND occurred_on < $2 ORDER BY occurred_on DESC, id DESC',[from,to]),
+    pool.query('SELECT * FROM expense WHERE occurred_on >= $1 AND occurred_on < $2 ORDER BY occurred_on DESC, id DESC',[from,to]),
     pool.query(`SELECT
       COALESCE((SELECT SUM(amount) FROM income WHERE EXTRACT(YEAR FROM occurred_on)=$1),0) income,
       COALESCE((SELECT SUM(amount) FROM expense WHERE EXTRACT(YEAR FROM occurred_on)=$1),0) expense`,[year]),
@@ -59,7 +59,7 @@ export default async function Home({ searchParams }) {
     <div className="hero">
       <div>
         <div className="muted">FINANZAS PERSONALES</div>
-        <h1>Gestor de gastos</h1>
+        <h1>Gestor de gastos</h1>\n        <div className="period-badge">Mostrando {monthNames[month-1]} {year}</div>
         <div className="muted">Control mensual y anual de lo que entra, lo que sale y dónde mejorar.</div>
       </div>
       <form className="filters" method="GET">
@@ -86,16 +86,27 @@ export default async function Home({ searchParams }) {
     <section className="grid cols">
       <div className="card">
         <h2 className="section-title">Ingresos</h2>
-        <form action={addIncome} className="form">
+        <form action={addIncome} className="form">\n          <input type="hidden" name="view_year" value={year} /><input type="hidden" name="view_month" value={month} />
           <input name="concept" placeholder="Ej. Sueldo septiembre" required />
           <select name="source" defaultValue="sueldo"><option value="sueldo">Sueldo</option><option value="comision">Comisión</option><option value="bonus">Bonus</option><option value="extra">Extra</option></select>
           <input name="amount" type="number" step="0.01" min="0" placeholder="Monto" required />
           <input name="occurred_on" type="date" defaultValue={new Date().toISOString().slice(0,10)} required />
           <button>Agregar</button>
         </form>
-        <table className="table"><thead><tr><th>Fecha</th><th>Concepto</th><th>Origen</th><th>Monto</th></tr></thead><tbody>
-          {recentInc.rows.map(r=><tr key={r.id}><td>{String(r.occurred_on).slice(0,10)}</td><td>{r.concept}</td><td>{r.source}</td><td className="positive">{money(r.amount)}</td></tr>)}
-        </tbody></table>
+        <div className="movement-list">
+          {recentInc.rows.length===0 && <p className="muted">Sin ingresos en este período.</p>}
+          {recentInc.rows.map(r=><div className="movement" key={r.id}>
+            <form action={updateIncome} className="edit-row">
+              <input type="hidden" name="id" value={r.id}/><input type="hidden" name="view_year" value={year}/><input type="hidden" name="view_month" value={month}/>
+              <input name="occurred_on" type="date" defaultValue={String(r.occurred_on).slice(0,10)} required/>
+              <input name="concept" defaultValue={r.concept} required/>
+              <select name="source" defaultValue={r.source}><option value="sueldo">Sueldo</option><option value="comision">Comisión</option><option value="bonus">Bonus</option><option value="extra">Extra</option></select>
+              <input name="amount" type="number" step="0.01" min="0" defaultValue={Number(r.amount)} required/>
+              <button className="save-btn">Guardar</button>
+            </form>
+            <form action={deleteIncome}><input type="hidden" name="id" value={r.id}/><input type="hidden" name="view_year" value={year}/><input type="hidden" name="view_month" value={month}/><button className="delete-btn" title="Eliminar ingreso">Eliminar</button></form>
+          </div>)}
+        </div>
       </div>
 
       <div className="card">
@@ -110,7 +121,7 @@ export default async function Home({ searchParams }) {
 
     <section className="card">
       <h2 className="section-title">Registrar gasto</h2>
-      <form action={addExpense} className="form">
+      <form action={addExpense} className="form">\n        <input type="hidden" name="view_year" value={year} /><input type="hidden" name="view_month" value={month} />
         <input name="concept" placeholder="Ej. Supermercado" required />
         <select name="category" defaultValue="Alimentación">
           <option>Alimentación</option><option>Vivienda</option><option>Servicios</option><option>Transporte</option><option>Salud</option><option>Ocio</option><option>Compras</option><option>Deudas</option><option>Suscripciones</option><option>Educación</option><option>Otros</option>
@@ -155,10 +166,21 @@ export default async function Home({ searchParams }) {
     <div style={{height:16}} />
 
     <section className="card">
-      <h2 className="section-title">Últimos gastos</h2>
-      <table className="table"><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Monto</th></tr></thead><tbody>
-        {recentExp.rows.map(r=><tr key={r.id}><td>{String(r.occurred_on).slice(0,10)}</td><td>{r.concept}</td><td>{r.category}</td><td className="negative">{money(r.amount)}</td></tr>)}
-      </tbody></table>
+      <h2 className="section-title">Gastos de {monthNames[month-1]} {year}</h2>
+      <div className="movement-list">
+        {recentExp.rows.length===0 && <p className="muted">Sin gastos en este período.</p>}
+        {recentExp.rows.map(r=><div className="movement" key={r.id}>
+          <form action={updateExpense} className="edit-row">
+            <input type="hidden" name="id" value={r.id}/><input type="hidden" name="view_year" value={year}/><input type="hidden" name="view_month" value={month}/>
+            <input name="occurred_on" type="date" defaultValue={String(r.occurred_on).slice(0,10)} required/>
+            <input name="concept" defaultValue={r.concept} required/>
+            <select name="category" defaultValue={r.category}><option>Alimentación</option><option>Vivienda</option><option>Servicios</option><option>Transporte</option><option>Salud</option><option>Ocio</option><option>Compras</option><option>Deudas</option><option>Suscripciones</option><option>Educación</option><option>Otros</option></select>
+            <input name="amount" type="number" step="0.01" min="0" defaultValue={Number(r.amount)} required/>
+            <button className="save-btn">Guardar</button>
+          </form>
+          <form action={deleteExpense}><input type="hidden" name="id" value={r.id}/><input type="hidden" name="view_year" value={year}/><input type="hidden" name="view_month" value={month}/><button className="delete-btn" title="Eliminar gasto">Eliminar</button></form>
+        </div>)}
+      </div>
     </section>
   </main>
 }
