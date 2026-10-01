@@ -3,10 +3,10 @@ import {pool} from '../lib/db';
 import {hashPassword,verifyPassword,createSession,destroySession,currentUser,audit} from '../lib/auth';
 import {redirect} from 'next/navigation';
 const clean=v=>String(v||'').trim();
-async function notifyNewRegistration(id){
+async function notifyNewRegistration(id,email,whatsapp){
  const token=process.env.TELEGRAM_BOT_TOKEN,chatId=process.env.TELEGRAM_ADMIN_CHAT_ID;
  if(!token||!chatId)return;
- const text=['🆕 Nuevo registro en KNJ Finanzas','ID interno: '+id,'Fecha/hora: '+new Date().toISOString(),'Cuenta creada correctamente'].join('\n');
+ const text=['🆕 Nuevo registro en KNJ Finanzas','ID interno: '+id,'Email: '+email,'WhatsApp: '+whatsapp,'Fecha/hora: '+new Date().toISOString(),'Cuenta creada correctamente'].join('\n');
  try{
   const r=await fetch('https://api.telegram.org/bot'+token+'/sendMessage',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:chatId,text})});
   if(!r.ok)console.error('Telegram notification HTTP '+r.status);
@@ -41,7 +41,7 @@ export async function register(fd){
   for(const [name,sort] of [['Alimentación',10],['Transporte',20],['Vivienda',30],['Servicios',40],['Salud',50],['Ocio',60],['Otros',100]])await client.query('INSERT INTO categories(name,sort_order,user_id) VALUES($1,$2,$3) ON CONFLICT(user_id,name) DO NOTHING',[name,sort,id]);
   await client.query('COMMIT');
   await audit(id,'register','user',id);
-  await notifyNewRegistration(id);
+  await notifyNewRegistration(id,email,whatsapp);
   await createSession(id);
  }catch(e){await client.query('ROLLBACK');return {ok:false,error:'No pudimos crear la cuenta. Revisa los datos e intenta nuevamente.'}}finally{client.release()}
  redirect('/');
