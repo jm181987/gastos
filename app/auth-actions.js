@@ -15,6 +15,28 @@ export async function login(fd){
  }else if(u.whatsapp!==whatsapp||!verifyPassword(password,u.password_hash))return {ok:false,error:'Datos de acceso incorrectos.'};
  await createSession(u.id);await pool.query('UPDATE app_users SET last_login_at=NOW() WHERE id=$1',[u.id]);await audit(u.id,'login','user',u.id);redirect('/');
 }
+
+export async function register(fd){
+ const email=clean(fd.get('email')).toLowerCase(),whatsapp=clean(fd.get('whatsapp')),password=String(fd.get('password')||''),confirm=String(fd.get('confirm_password')||'');
+ if(!email||!email.includes('@')||!whatsapp)return {ok:false,error:'Completa tu email y WhatsApp.'};
+ if(password.length<8)return {ok:false,error:'La contraseña debe tener al menos 8 caracteres.'};
+ if(password!==confirm)return {ok:false,error:'Las contraseñas no coinciden.'};
+ const client=await pool.connect();
+ try{
+  await client.query('BEGIN');
+  const exists=await client.query('SELECT id FROM app_users WHERE lower(email)=$1',[email]);
+  if(exists.rows[0]){await client.query('ROLLBACK');return {ok:false,error:'Ya existe una cuenta con ese email.'}}
+  const r=await client.query("INSERT INTO app_users(email,whatsapp,password_hash,role,active) VALUES($1,$2,$3,'user',true) RETURNING id",[email,whatsapp,hashPassword(password)]);
+  const id=r.rows[0].id;
+  await client.query("INSERT INTO accounts(name,kind,opening_balance,user_id) VALUES('Efectivo','cash',0,$1) ON CONFLICT(user_id,name) DO NOTHING",[id]);
+  for(const [name,sort] of [['Alimentación',10],['Transporte',20],['Vivienda',30],['Servicios',40],['Salud',50],['Ocio',60],['Otros',100]])await client.query('INSERT INTO categories(name,sort_order,user_id) VALUES($1,$2,$3) ON CONFLICT(user_id,name) DO NOTHING',[name,sort,id]);
+  await client.query('COMMIT');
+  await audit(id,'register','user',id);
+  await createSession(id);
+ }catch(e){await client.query('ROLLBACK');return {ok:false,error:'No pudimos crear la cuenta. Revisa los datos e intenta nuevamente.'}}finally{client.release()}
+ redirect('/');
+}
+
 export async function logout(){const u=await currentUser();if(u)await audit(u.id,'logout','user',u.id);await destroySession();redirect('/login')}
 export async function createUser(fd){const admin=await currentUser();if(!admin||admin.role!=='admin')throw new Error('No autorizado');const email=clean(fd.get('email')).toLowerCase(),whatsapp=clean(fd.get('whatsapp')),password=String(fd.get('password')||'');if(!email||!whatsapp||password.length<8)throw new Error('Completa email, WhatsApp y una contraseña de al menos 8 caracteres');const r=await pool.query("INSERT INTO app_users(email,whatsapp,password_hash,role) VALUES($1,$2,$3,'user') RETURNING id",[email,whatsapp,hashPassword(password)]);await audit(admin.id,'create_user','user',r.rows[0].id,{email});redirect('/admin')}
 export async function toggleUser(fd){const admin=await currentUser();if(!admin||admin.role!=='admin')throw new Error('No autorizado');const id=Number(fd.get('id'));if(id===Number(admin.id))throw new Error('No puedes desactivar tu propia cuenta');const r=await pool.query('UPDATE app_users SET active=NOT active WHERE id=$1 RETURNING active,email',[id]);if(r.rows[0])await audit(admin.id,r.rows[0].active?'activate_user':'deactivate_user','user',id,{email:r.rows[0].email});redirect('/admin')}
