@@ -1,14 +1,3 @@
 import './globals.css';
-
-export const metadata = {
-  title: 'Gestor de Gastos',
-  description: 'Control mensual y anual de ingresos, gastos y KPIs',
-};
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="es">
-      <body>{children}</body>
-    </html>
-  );
-}
+export const metadata={title:{default:'KNJ Finanzas',template:'%s · KNJ Finanzas'},description:'Organiza tus finanzas personales en un solo lugar. Controla ingresos, gastos, cuentas, tarjetas, deudas, cuotas, presupuestos y próximos pagos con un panel privado y fácil de usar.',icons:{icon:'/favicon.ico',shortcut:'/favicon.ico',apple:'/logo.png'},openGraph:{title:'KNJ Finanzas',description:'Tu dinero, cuentas, deudas y próximos pagos organizados en un solo lugar.',images:[{url:'/logo.png',width:256,height:256,alt:'KNJ Finanzas'}],type:'website',locale:'es_UY'},twitter:{card:'summary',title:'KNJ Finanzas',description:'Control simple de tus finanzas personales.',images:['/logo.png']}};
+export default function RootLayout({children}){return <html lang="es"><body>{children}</body></html>}
