@@ -2,6 +2,7 @@ import {currentUser} from '../../lib/auth';
 import {pool} from '../../lib/db';
 import {redirect} from 'next/navigation';
 import {createUser,toggleUser,deleteUser,resetUserPassword} from '../auth-actions';
+import ThemeToggle from '../ThemeToggle';
 export const dynamic='force-dynamic';
 const fmt=d=>d?new Date(d).toLocaleString('es-UY'):'Nunca';
 export default async function Admin({searchParams}){
@@ -16,7 +17,7 @@ export default async function Admin({searchParams}){
  ]);
  const s=stats.rows[0],act=activity.rows[0],usageMap=new Map(usage.rows.map(x=>[Number(x.id),x])),totals=usage.rows.reduce((a,x)=>({mov:a.mov+x.incomes+x.expenses,accounts:a.accounts+x.accounts,cards:a.cards+x.cards,debts:a.debts+x.debts,receipts:a.receipts+x.receipts}),{mov:0,accounts:0,cards:0,debts:0,receipts:0}),filtered=users.rows.filter(u=>(!q||u.email.toLowerCase().includes(q)||String(u.whatsapp||'').toLowerCase().includes(q))&&(status==='all'||(status==='active'&&u.active)||(status==='inactive'&&!u.active)||(status==='admin'&&u.role==='admin')));
  return <main className="wrap admin-page">
-  <header className="admin-head"><div><span className="eyebrow">KNJ · ADMINISTRACIÓN</span><h1>Centro de control</h1><p className="muted">Gestiona usuarios, accesos y actividad desde un solo lugar.</p></div><div className="admin-top-actions"><a className="export-btn" href="/">← Panel financiero</a><a className="export-btn" href="/api/export/backup">Backup</a></div></header>
+  <header className="admin-head"><div><span className="eyebrow">KNJ · ADMINISTRACIÓN</span><h1>Centro de control</h1><p className="muted">Gestiona usuarios, accesos y actividad desde un solo lugar.</p></div><div className="admin-top-actions"><ThemeToggle/><a className="export-btn" href="/">← Panel financiero</a><a className="export-btn" href="/api/export/backup">Backup</a></div></header>
   <section className="admin-kpis"><div className="card"><small>Usuarios</small><strong>{s.total}</strong><span>Total registrado</span></div><div className="card"><small>Activos</small><strong className="positive">{s.active}</strong><span>Con acceso</span></div><div className="card"><small>Desactivados</small><strong className="negative">{s.inactive}</strong><span>Sin acceso</span></div><div className="card"><small>Nuevos 30 días</small><strong>{s.recent}</strong><span>Altas recientes</span></div></section>
   <section className="admin-usage-summary"><div className="card"><span className="eyebrow">USO DE LA APP</span><h2>Actividad de la plataforma</h2><div className="usage-numbers"><div><b>{totals.mov}</b><small>Movimientos</small></div><div><b>{totals.accounts}</b><small>Cuentas</small></div><div><b>{totals.cards}</b><small>Tarjetas</small></div><div><b>{totals.debts}</b><small>Deudas</small></div><div><b>{totals.receipts}</b><small>Adjuntos</small></div></div></div><div className="card"><span className="eyebrow">ACTIVIDAD</span><h2>Eventos registrados</h2><div className="usage-numbers compact"><div><b>{act.events_day}</b><small>24 h</small></div><div><b>{act.events_week}</b><small>7 días</small></div><div><b>{act.events_month}</b><small>30 días</small></div></div></div></section>
   <section className="admin-layout">
