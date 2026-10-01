@@ -302,3 +302,27 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
  .admin-user{grid-template-columns:minmax(0,1fr) 82px!important;padding:9px!important}
  .admin-user-meta .user-usage{display:none!important}
 }
+
+
+/* Admin: menu Gestionar en flujo, nunca superpuesto */
+.admin-users{overflow:visible}
+.admin-user-list{overflow:visible}
+.admin-user{position:relative;overflow:visible}
+.admin-user-menu{position:static!important}
+.admin-user-menu-panel{position:static!important;right:auto!important;top:auto!important;width:100%!important;max-width:100%!important;margin-top:6px;box-shadow:none!important}
+.admin-user-menu[open]{grid-column:1/-1}
+.admin-user-menu[open] .admin-user-menu-panel{display:grid}
+@media(min-width:1101px){
+ .admin-user{grid-template-columns:minmax(230px,1.35fr) minmax(230px,1fr) minmax(105px,160px)!important}
+ .admin-user-actions{display:block!important}
+ .admin-user-actions:has(.admin-user-menu[open]){grid-column:1/-1;width:100%}
+ .admin-user-actions:has(.admin-user-menu[open]) .admin-user-menu>summary{max-width:160px;margin-left:auto}
+ .admin-user-actions:has(.admin-user-menu[open]) .admin-user-menu-panel{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;background:var(--surface2)}
+}
+@media(max-width:1100px){
+ .admin-user-actions:has(.admin-user-menu[open]){grid-column:1/-1!important;grid-row:auto!important}
+ .admin-user-actions:has(.admin-user-menu[open]) .admin-user-menu-panel{padding:9px;background:var(--surface2)}
+}
+@media(max-width:700px){
+ .admin-user-menu-panel{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;max-height:none!important;overflow:visible!important}
+}
