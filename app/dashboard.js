@@ -6,55 +6,56 @@ import SectionModal from './SectionModal';
 import AdvancedFinance from './AdvancedFinance';
 import ImportPreview from './ImportPreview';
 import StartHere from './StartHere';
+import {logout} from './auth-actions';
 import {addIncome,addExpense,updateIncome,updateExpense,deleteIncome,deleteExpense,setBudget,addCategory,toggleCategory,addRecurring,updateRecurring,toggleRecurring,deleteRecurring,setMonthlyBudget,addGoal,updateGoal,deleteGoal,importCsv,addExpenseAdvanced} from './actions';
 const money=n=>new Intl.NumberFormat('es-UY',{style:'currency',currency:'UYU',maximumFractionDigits:0}).format(Number(n||0));
 const dv=v=>typeof v==='string'?v.slice(0,10):new Date(v).toISOString().slice(0,10);
 const months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const Hidden=({y,m})=><><input type="hidden" name="view_year" value={y}/><input type="hidden" name="view_month" value={m}/></>;
 
-async function materializeRecurring(year,month){
- const key=`${year}-${String(month).padStart(2,'0')}`, first=`${key}-01`, items=(await pool.query('SELECT * FROM recurring_items WHERE active=true AND (start_date IS NULL OR start_date <= $1) AND (end_date IS NULL OR end_date >= $1)',[first])).rows;
+async function materializeRecurring(year,month,userId){
+ const key=`${year}-${String(month).padStart(2,'0')}`, first=`${key}-01`, items=(await pool.query('SELECT * FROM recurring_items WHERE user_id=$2 AND active=true AND (start_date IS NULL OR start_date <= $1) AND (end_date IS NULL OR end_date >= $1)',[first,userId])).rows;
  const days=new Date(year,month,0).getDate();
  for(const r of items){const date=`${key}-${String(Math.min(r.day_of_month,days)).padStart(2,'0')}`;
-  if(r.kind==='income') await pool.query(`INSERT INTO income(concept,source,amount,occurred_on,status,recurring_id,period_key) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(recurring_id,period_key) WHERE recurring_id IS NOT NULL DO NOTHING`,[r.concept,r.source||'extra',r.amount,date,r.status,r.id,key]);
-  else await pool.query(`INSERT INTO expense(concept,category,amount,occurred_on,status,recurring_id,period_key) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(recurring_id,period_key) WHERE recurring_id IS NOT NULL DO NOTHING`,[r.concept,r.category||'Otros',r.amount,date,r.status,r.id,key]);
+  if(r.kind==='income') await pool.query(`INSERT INTO income(concept,source,amount,occurred_on,status,recurring_id,period_key,user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(recurring_id,period_key) WHERE recurring_id IS NOT NULL DO NOTHING`,[r.concept,r.source||'extra',r.amount,date,r.status,r.id,key,userId]);
+  else await pool.query(`INSERT INTO expense(concept,category,amount,occurred_on,status,recurring_id,period_key,user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(recurring_id,period_key) WHERE recurring_id IS NOT NULL DO NOTHING`,[r.concept,r.category||'Otros',r.amount,date,r.status,r.id,key,userId]);
  }
 }
 
-export default async function Dashboard({params}){
+export default async function Dashboard({params,user}){
  const now=new Date(),year=Number(params?.year||now.getFullYear()),month=Number(params?.month||now.getMonth()+1);
- await materializeRecurring(year,month);
+ await materializeRecurring(year,month,user.id);
  const from=`${year}-${String(month).padStart(2,'0')}-01`,to=new Date(Date.UTC(year,month,1)).toISOString().slice(0,10);
  const prevDate=new Date(Date.UTC(year,month-2,1)),pf=prevDate.toISOString().slice(0,10),pt=from;
  const q=String(params?.q||'').trim(),cat=String(params?.category||''),status=String(params?.status||'');
  const [inc,exp,prevInc,prevExp,cats,budgets,monthlyBudget,recurring,goals,annual,monthSeries,accounts,cards,debts,tags,closure,accountBalances,cardStatements]=await Promise.all([
-  pool.query(`SELECT * FROM income WHERE deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2 AND ($3='' OR concept ILIKE '%'||$3||'%') AND ($4='' OR status=$4) ORDER BY occurred_on DESC,id DESC`,[from,to,q,status]),
-  pool.query(`SELECT * FROM expense WHERE deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2 AND ($3='' OR concept ILIKE '%'||$3||'%') AND ($4='' OR category=$4) AND ($5='' OR status=$5) ORDER BY occurred_on DESC,id DESC`,[from,to,q,cat,status]),
-  pool.query('SELECT COALESCE(SUM(amount),0) total FROM income WHERE deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2',[pf,pt]),
-  pool.query('SELECT COALESCE(SUM(amount),0) total FROM expense WHERE deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2',[pf,pt]),
-  pool.query('SELECT * FROM categories ORDER BY sort_order,name'),
-  pool.query('SELECT b.*,c.name category FROM budgets b JOIN categories c ON c.id=b.category_id WHERE year=$1 AND month=$2',[year,month]),
-  pool.query('SELECT amount FROM monthly_budgets WHERE year=$1 AND month=$2',[year,month]),
-  pool.query('SELECT * FROM recurring_items ORDER BY kind,concept'),
-  pool.query('SELECT * FROM savings_goals ORDER BY id DESC'),
-  pool.query(`SELECT COALESCE((SELECT SUM(amount) FROM income WHERE deleted_at IS NULL AND EXTRACT(YEAR FROM occurred_on)=$1),0) income,COALESCE((SELECT SUM(amount) FROM expense WHERE deleted_at IS NULL AND EXTRACT(YEAR FROM occurred_on)=$1),0) expense`,[year]),
-  pool.query(`WITH m AS(SELECT generate_series(1,12)m) SELECT m.m,COALESCE((SELECT SUM(amount) FROM income i WHERE i.deleted_at IS NULL AND EXTRACT(YEAR FROM i.occurred_on)=$1 AND EXTRACT(MONTH FROM i.occurred_on)=m.m),0) income,COALESCE((SELECT SUM(amount) FROM expense e WHERE e.deleted_at IS NULL AND EXTRACT(YEAR FROM e.occurred_on)=$1 AND EXTRACT(MONTH FROM e.occurred_on)=m.m),0) expense FROM m ORDER BY m.m`,[year]),
-  pool.query('SELECT * FROM accounts WHERE active=true ORDER BY name'),
-  pool.query('SELECT * FROM credit_cards WHERE active=true ORDER BY name'),
-  pool.query('SELECT * FROM debts ORDER BY status,name'),
-  pool.query('SELECT * FROM tags ORDER BY name'),
-  pool.query('SELECT * FROM monthly_closures WHERE year=$1 AND month=$2',[year,month]),
+  pool.query(`SELECT * FROM income WHERE user_id=$5 AND deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2 AND ($3='' OR concept ILIKE '%'||$3||'%') AND ($4='' OR status=$4) ORDER BY occurred_on DESC,id DESC`,[from,to,q,status,user.id]),
+  pool.query(`SELECT * FROM expense WHERE user_id=$6 AND deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2 AND ($3='' OR concept ILIKE '%'||$3||'%') AND ($4='' OR category=$4) AND ($5='' OR status=$5) ORDER BY occurred_on DESC,id DESC`,[from,to,q,cat,status,user.id]),
+  pool.query('SELECT COALESCE(SUM(amount),0) total FROM income WHERE user_id=$3 AND deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2',[pf,pt,user.id]),
+  pool.query('SELECT COALESCE(SUM(amount),0) total FROM expense WHERE user_id=$3 AND deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2',[pf,pt,user.id]),
+  pool.query('SELECT * FROM categories WHERE user_id=$1 ORDER BY sort_order,name',[user.id]),
+  pool.query('SELECT b.*,c.name category FROM budgets b JOIN categories c ON c.id=b.category_id WHERE b.user_id=$3 AND year=$1 AND month=$2',[year,month,user.id]),
+  pool.query('SELECT amount FROM monthly_budgets WHERE user_id=$3 AND year=$1 AND month=$2',[year,month,user.id]),
+  pool.query('SELECT * FROM recurring_items WHERE user_id=$1 ORDER BY kind,concept',[user.id]),
+  pool.query('SELECT * FROM savings_goals WHERE user_id=$1 ORDER BY id DESC',[user.id]),
+  pool.query(`SELECT COALESCE((SELECT SUM(amount) FROM income WHERE user_id=$2 AND deleted_at IS NULL AND EXTRACT(YEAR FROM occurred_on)=$1),0) income,COALESCE((SELECT SUM(amount) FROM expense WHERE user_id=$2 AND deleted_at IS NULL AND EXTRACT(YEAR FROM occurred_on)=$1),0) expense`,[year,user.id]),
+  pool.query(`WITH m AS(SELECT generate_series(1,12)m) SELECT m.m,COALESCE((SELECT SUM(amount) FROM income i WHERE i.user_id=$2 AND i.deleted_at IS NULL AND EXTRACT(YEAR FROM i.occurred_on)=$1 AND EXTRACT(MONTH FROM i.occurred_on)=m.m),0) income,COALESCE((SELECT SUM(amount) FROM expense e WHERE e.user_id=$2 AND e.deleted_at IS NULL AND EXTRACT(YEAR FROM e.occurred_on)=$1 AND EXTRACT(MONTH FROM e.occurred_on)=m.m),0) expense FROM m ORDER BY m.m`,[year,user.id]),
+  pool.query('SELECT * FROM accounts WHERE user_id=$1 AND active=true ORDER BY name',[user.id]),
+  pool.query('SELECT * FROM credit_cards WHERE user_id=$1 AND active=true ORDER BY name',[user.id]),
+  pool.query('SELECT * FROM debts WHERE user_id=$1 ORDER BY status,name',[user.id]),
+  pool.query('SELECT * FROM tags WHERE user_id=$1 ORDER BY name',[user.id]),
+  pool.query('SELECT * FROM monthly_closures WHERE user_id=$3 AND year=$1 AND month=$2',[year,month,user.id]),
   pool.query(`SELECT a.*, a.opening_balance
     + COALESCE((SELECT SUM(i.amount) FROM income i WHERE i.deleted_at IS NULL AND i.status='pagado' AND i.account_id=a.id),0)
     - COALESCE((SELECT SUM(e.amount) FROM expense e WHERE e.deleted_at IS NULL AND e.status='pagado' AND e.account_id=a.id AND e.credit_card_id IS NULL),0)
     + COALESCE((SELECT SUM(t.amount) FROM transfers t WHERE t.to_account_id=a.id),0)
     - COALESCE((SELECT SUM(t.amount) FROM transfers t WHERE t.from_account_id=a.id),0) AS current_balance
-   FROM accounts a WHERE a.active=true ORDER BY a.name`),
+   FROM accounts a WHERE a.user_id=$1 AND a.active=true ORDER BY a.name`,[user.id]),
   pool.query(`SELECT c.id,c.name,c.closing_day,c.due_day,c.account_id,
     COALESCE(SUM(CASE WHEN e.deleted_at IS NULL AND e.status IN('pagado','pendiente') THEN e.amount ELSE 0 END),0) total,
     COUNT(e.id) FILTER (WHERE e.deleted_at IS NULL) movements
-   FROM credit_cards c LEFT JOIN expense e ON e.credit_card_id=c.id
-   WHERE c.active=true GROUP BY c.id ORDER BY c.name`)
+   FROM credit_cards c LEFT JOIN expense e ON e.credit_card_id=c.id AND e.user_id=c.user_id
+   WHERE c.user_id=$1 AND c.active=true GROUP BY c.id ORDER BY c.name`,[user.id])
  ]);
  const allCats=cats.rows.filter(x=>x.active),income=inc.rows.reduce((a,x)=>a+Number(x.amount),0),expense=exp.rows.reduce((a,x)=>a+Number(x.amount),0);
  const paidIncome=inc.rows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0),paidExpense=exp.rows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0);
@@ -78,7 +79,7 @@ export default async function Dashboard({params}){
  const upcoming=[...recurring.rows.filter(r=>r.active&&r.kind==='expense').map(r=>({date:`${year}-${String(month).padStart(2,'0')}-${String(Math.min(r.day_of_month,28)).padStart(2,'0')}`,label:r.concept,amount:Number(r.amount)})),...debts.rows.filter(d=>d.status==='active'&&d.due_date).map(d=>({date:dv(d.due_date),label:`Deuda: ${d.name}`,amount:Number(d.installment_amount||d.current_balance)}))].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,20);
  return <main className="wrap">
   <div className="hero"><div><div className="muted">FINANZAS PERSONALES</div><h1>Gestor de gastos</h1><div className="period-badge">{months[month-1]} {year}</div></div>
-   <div className="hero-actions"><ThemeToggle/><form className="filters"><select name="month" defaultValue={month}>{months.map((x,i)=><option value={i+1} key={x}>{x}</option>)}</select><select name="year" defaultValue={year}>{Array.from({length:11},(_,i)=>year-5+i).map(y=><option key={y}>{y}</option>)}</select><button>Ver período</button></form></div>
+   <div className="hero-actions"><span className="user-chip">{user.email}</span>{user.role==='admin'&&<a className="export-btn" href="/admin">Admin</a>}<form action={logout}><button className="secondary-btn">Salir</button></form><ThemeToggle/><form className="filters"><select name="month" defaultValue={month}>{months.map((x,i)=><option value={i+1} key={x}>{x}</option>)}</select><select name="year" defaultValue={year}>{Array.from({length:11},(_,i)=>year-5+i).map(y=><option key={y}>{y}</option>)}</select><button>Ver período</button></form></div>
   </div>
   <StartHere hasAccounts={accountBalances.rows.length>1} hasCards={cards.rows.length>0} hasDebts={debts.rows.length>0}/>
   <section className="grid kpis"><div className="card kpi"><span>Ingresos</span><strong className="positive">{money(income)}</strong><small>{pct(income,pi).toFixed(1)}% vs mes anterior</small></div><div className="card kpi"><span>Gastos</span><strong className="negative">{money(expense)}</strong><small>{pct(expense,pe).toFixed(1)}% vs mes anterior</small></div><div className="card kpi"><span>Balance</span><strong>{money(income-expense)}</strong></div><div className="card kpi"><span>Pendiente de pagar</span><strong>{money(pendingExpense)}</strong></div><div className="card kpi"><span>Balance proyectado</span><strong>{money(projected)}</strong></div></section>

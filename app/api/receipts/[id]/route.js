@@ -1,9 +1,1 @@
-import {pool} from '../../../../lib/db';
-export const dynamic='force-dynamic';
-export async function GET(_req,{params}){
- const {id}=await params;
- const r=await pool.query('SELECT file_name,mime_type,data FROM receipts WHERE id=$1',[Number(id)]);
- if(!r.rows[0])return new Response('No encontrado',{status:404});
- const x=r.rows[0];
- return new Response(x.data,{headers:{'Content-Type':x.mime_type,'Content-Disposition':`inline; filename="${String(x.file_name).replace(/"/g,'')}"`,'Cache-Control':'private, no-store'}});
-}
+import {pool} from '../../../../lib/db';import {cookies} from 'next/headers';export const dynamic='force-dynamic';export async function GET(_req,{params}){const sid=(await cookies()).get('gastos_session')?.value;if(!sid)return new Response('No autorizado',{status:401});const sr=await pool.query('SELECT user_id FROM user_sessions WHERE id=$1 AND expires_at>NOW()',[sid]);if(!sr.rows[0])return new Response('No autorizado',{status:401});const {id}=await params,r=await pool.query('SELECT file_name,mime_type,data FROM receipts WHERE id=$1 AND user_id=$2',[Number(id),sr.rows[0].user_id]);if(!r.rows[0])return new Response('No encontrado',{status:404});const x=r.rows[0];return new Response(x.data,{headers:{'Content-Type':x.mime_type,'Cache-Control':'private, no-store'}})}
