@@ -82,3 +82,24 @@ export async function permanentlyDeleteUser(fd){
  }catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}
  redirect('/admin');
 }
+
+
+export async function updateUser(fd){
+ const admin=await currentUser();
+ if(!admin||admin.role!=='admin')throw new Error('No autorizado');
+ const id=Number(fd.get('id')),email=clean(fd.get('email')).toLowerCase(),whatsapp=clean(fd.get('whatsapp'));
+ if(!Number.isInteger(id)||id<=0)throw new Error('Usuario inválido');
+ if(!email||!email.includes('@')||!whatsapp)throw new Error('Completa un email y WhatsApp válidos');
+ const client=await pool.connect();
+ try{
+  await client.query('BEGIN');
+  const target=await client.query('SELECT email,whatsapp FROM app_users WHERE id=$1 FOR UPDATE',[id]);
+  if(!target.rows[0])throw new Error('Usuario no encontrado');
+  const duplicate=await client.query('SELECT id FROM app_users WHERE lower(email)=$1 AND id<>$2',[email,id]);
+  if(duplicate.rows[0])throw new Error('Ya existe otra cuenta con ese email');
+  await client.query('UPDATE app_users SET email=$1,whatsapp=$2 WHERE id=$3',[email,whatsapp,id]);
+  await client.query('COMMIT');
+  await audit(admin.id,'update_user','user',id,{previous_email:target.rows[0].email,email});
+ }catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}
+ redirect('/admin');
+}
