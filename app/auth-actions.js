@@ -54,3 +54,31 @@ export async function toggleUser(fd){const admin=await currentUser();if(!admin||
 export async function deleteUser(fd){const admin=await currentUser();if(!admin||admin.role!=='admin')throw new Error('No autorizado');const id=Number(fd.get('id'));if(!Number.isInteger(id)||id<=0)throw new Error('Usuario inválido');if(id===Number(admin.id))throw new Error('No puedes eliminar tu propia cuenta');const client=await pool.connect();try{await client.query('BEGIN');const target=await client.query('SELECT email,role FROM app_users WHERE id=$1 FOR UPDATE',[id]);if(!target.rows[0])throw new Error('Usuario no encontrado');if(target.rows[0].role==='admin')throw new Error('No puedes eliminar otra cuenta administradora');await client.query('DELETE FROM user_sessions WHERE user_id=$1',[id]);await client.query('UPDATE app_users SET active=false,password_hash=NULL WHERE id=$1',[id]);await client.query('COMMIT');await audit(admin.id,'delete_user','user',id,{previous_email:target.rows[0].email});}catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}redirect('/admin')}
 
 export async function resetUserPassword(fd){const admin=await currentUser();if(!admin||admin.role!=='admin')throw new Error('No autorizado');const id=Number(fd.get('id')),password=String(fd.get('new_password')||'');if(!Number.isInteger(id)||id<=0)throw new Error('Usuario inválido');if(password.length<8)throw new Error('La nueva contraseña debe tener al menos 8 caracteres');const client=await pool.connect();try{await client.query('BEGIN');const target=await client.query('SELECT email,role FROM app_users WHERE id=$1 FOR UPDATE',[id]);if(!target.rows[0])throw new Error('Usuario no encontrado');if(target.rows[0].role==='admin'&&id!==Number(admin.id))throw new Error('No puedes restablecer la contraseña de otro administrador');await client.query('UPDATE app_users SET password_hash=$1,active=true WHERE id=$2',[hashPassword(password),id]);await client.query('DELETE FROM user_sessions WHERE user_id=$1',[id]);await client.query('COMMIT');await audit(admin.id,'reset_password','user',id,{email:target.rows[0].email});}catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}redirect('/admin')}
+
+
+export async function permanentlyDeleteUser(fd){
+ const admin=await currentUser();
+ if(!admin||admin.role!=='admin')throw new Error('No autorizado');
+ const id=Number(fd.get('id')),confirmation=clean(fd.get('confirmation'));
+ if(!Number.isInteger(id)||id<=0)throw new Error('Usuario inválido');
+ if(id===Number(admin.id))throw new Error('No puedes eliminar permanentemente tu propia cuenta');
+ if(confirmation!=='ELIMINAR')throw new Error('Escribe ELIMINAR para confirmar');
+ const client=await pool.connect();
+ try{
+  await client.query('BEGIN');
+  const target=await client.query('SELECT email,role FROM app_users WHERE id=$1 FOR UPDATE',[id]);
+  if(!target.rows[0])throw new Error('Usuario no encontrado');
+  if(target.rows[0].role==='admin')throw new Error('No puedes eliminar permanentemente otra cuenta administradora');
+  const email=target.rows[0].email;
+  await client.query("DELETE FROM movement_tags mt USING income i WHERE mt.movement_kind='income' AND mt.movement_id=i.id AND i.user_id=$1",[id]);
+  await client.query("DELETE FROM movement_tags mt USING expense e WHERE mt.movement_kind='expense' AND mt.movement_id=e.id AND e.user_id=$1",[id]);
+  await client.query('DELETE FROM debt_payments dp USING debts d WHERE dp.debt_id=d.id AND d.user_id=$1',[id]);
+  await client.query('DELETE FROM user_sessions WHERE user_id=$1',[id]);
+  for(const table of ['receipts','transfers','credit_cards','income','expense','debts','accounts','tags','monthly_closures','monthly_budgets','savings_goals','recurring_items','budgets','categories'])await client.query('DELETE FROM '+table+' WHERE user_id=$1',[id]);
+  await client.query('UPDATE audit_log SET user_id=NULL WHERE user_id=$1',[id]);
+  await client.query('DELETE FROM app_users WHERE id=$1',[id]);
+  await client.query('COMMIT');
+  await audit(admin.id,'permanent_delete_user','user',id,{email});
+ }catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}
+ redirect('/admin');
+}
