@@ -48,3 +48,32 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
 .finance-progress{display:flex;align-items:center;gap:8px;margin:10px 0 14px;padding:9px 12px;border-radius:12px;background:var(--surface2);overflow-x:auto}.finance-progress span{display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:11px;color:var(--muted);font-weight:750}.finance-progress span:first-letter{font-weight:900}.finance-progress span.done{color:var(--text)}.finance-progress span.done:before{content:'✓';display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--primary);color:#fff;font-size:10px}.finance-progress span.done{font-size:0}.finance-progress span.done b{font-size:11px}.finance-progress i{font-style:normal;color:var(--muted);font-size:11px}.box-action-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:-3px 0 11px;padding:9px 10px;border-radius:9px;background:var(--surface)}.box-action-head span{font-size:11px;color:var(--muted)}.box-action-head button{width:auto;min-height:32px;padding:6px 10px;font-size:11px}.finance-box>.finance-row:first-of-type{border-top:1px solid var(--border)}.finance-row b{font-size:13px}.debt-card{padding:13px;border:1px solid var(--border);border-radius:11px;margin-top:8px;background:var(--surface)}.debt-card+.debt-card{margin-top:8px}.debt-list{display:grid;gap:2px}.finance-tabs{scrollbar-width:none}.finance-tabs::-webkit-scrollbar{display:none}@media(max-width:600px){.box-action-head{align-items:flex-start;flex-direction:column}.box-action-head button{width:100%}.finance-progress{margin-inline:-2px}}
 
 .finance-help-toggle{width:auto;min-height:30px;padding:5px 9px;margin:-4px 0 6px;background:transparent;border:0;color:var(--muted);font-size:11px}.finance-shortcuts.clean{grid-template-columns:repeat(3,1fr);margin-bottom:4px}.finance-shortcuts.clean button{min-height:88px;padding:15px}.finance-shortcuts.clean b{font-size:14px}.finance-secondary{border-top:1px solid var(--border);margin-top:10px;padding-top:10px}.finance-secondary>summary{cursor:pointer;list-style:none;color:var(--muted);font-size:11px;font-weight:750;padding:5px 0}.finance-secondary>summary::-webkit-details-marker{display:none}.finance-secondary>summary:after{content:' +';color:var(--muted)}.finance-secondary[open]>summary:after{content:' −'}.finance-secondary .smart-kpis,.finance-secondary .debt-help{margin-top:9px}.finance-hub>.section-head{margin-bottom:4px}.finance-hub>.section-head h2{margin-bottom:2px}.finance-tabs{margin-top:3px}.finance-box-head span{max-width:580px}@media(max-width:700px){.finance-shortcuts.clean{grid-template-columns:1fr}.finance-shortcuts.clean button{min-height:68px}}
+
+/* Separación visual del Centro Financiero */
+.finance-panel{gap:20px}
+.finance-two{gap:18px}
+.finance-box{position:relative;padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:0 5px 18px var(--shadow)}
+.finance-box+.finance-box{margin-top:2px}
+.finance-box-head{padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid var(--border)}
+.finance-box-head>b{font-size:16px}
+.finance-box-head>span{margin-top:2px}
+.finance-shortcuts.clean{gap:14px}
+.finance-shortcuts.clean button{position:relative;border-radius:15px;border:1px solid var(--border);box-shadow:0 4px 14px var(--shadow)}
+.finance-shortcuts.clean button:after{content:'›';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:22px;color:var(--muted)}
+.box-action-head{margin:0 0 14px;padding:11px 12px;border:1px solid var(--border);border-radius:11px;background:var(--surface2)}
+.guided-form{margin:0 0 16px;padding:16px;border-radius:13px;box-shadow:inset 0 0 0 1px var(--border)}
+.finance-row{padding:13px 12px;margin-top:7px;border:1px solid var(--border);border-radius:11px;background:var(--surface2)}
+.finance-row+.finance-row{margin-top:8px}
+.debt-list{gap:12px;margin-top:14px}
+.debt-card{margin:0;padding:16px;border-radius:14px;box-shadow:0 3px 12px var(--shadow)}
+.debt-card+.debt-card{margin-top:0}
+.installment-list{gap:9px;margin-top:16px;padding-top:16px}
+.installment-row{padding:11px 13px;background:var(--surface2)}
+.calendar-item{padding:12px 10px;border-bottom:1px solid var(--border)}
+.calendar-item:last-child{border-bottom:0}
+.impact-box{margin-top:3px;padding:10px 12px}
+.finance-secondary{margin-top:16px;padding-top:13px}
+.finance-tabs{gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.finance-tabs button{border-radius:10px}
+.context-banner{margin-bottom:18px}
+@media(max-width:800px){.finance-panel{gap:14px}.finance-two{gap:14px}.finance-box{padding:14px}.finance-shortcuts.clean{gap:10px}}
