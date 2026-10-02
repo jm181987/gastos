@@ -1,14 +1,16 @@
 'use client';
 import {useState,useTransition} from 'react';
-import {updateIncome,updateExpense,deleteIncome,deleteExpense,restoreMovement,duplicateMovement} from './actions';
+import {updateIncome,updateExpense,deleteIncome,deleteExpense,restoreMovement,duplicateMovement,setDebtInstallmentStatus} from './actions';
 import SafeForm from './SafeForm';
 const money=n=>new Intl.NumberFormat('es-UY',{style:'currency',currency:'UYU',maximumFractionDigits:0}).format(Number(n||0));
-export default function Movements({income,expenses,categories,accounts=[],cards=[],year,month}){
- const rows=[...income.map(x=>({...x,kind:'income'})),...expenses.map(x=>({...x,kind:'expense'}))].sort((a,b)=>String(b.occurred_on).localeCompare(String(a.occurred_on))||b.id-a.id);
+export default function Movements({income,expenses,debtInstallments=[],categories,accounts=[],cards=[],year,month}){
+ const debtRows=debtInstallments.map(x=>({id:x.id,kind:'debt',concept:x.debt_name+' · cuota '+x.installment_number,occurred_on:x.due_date,status:x.status==='paid'?'pagado':'pendiente',amount:x.amount,category:'Deuda'}));
+ const rows=[...income.map(x=>({...x,kind:'income'})),...expenses.map(x=>({...x,kind:'expense'})),...debtRows].sort((a,b)=>String(b.occurred_on).localeCompare(String(a.occurred_on))||b.id-a.id);
  const [edit,setEdit]=useState(null),[deleted,setDeleted]=useState(null),[pending,start]=useTransition();
  const del=r=>{if(!confirm(`¿Eliminar "${r.concept}"? Podrás deshacerlo.`))return;const fd=new FormData();fd.set('id',r.id);start(async()=>{await (r.kind==='income'?deleteIncome:deleteExpense)(fd);setDeleted(r);setEdit(null)})};
  const restore=()=>deleted&&start(async()=>{await restoreMovement(deleted.kind,deleted.id);setDeleted(null)});
  const duplicate=r=>start(async()=>{await duplicateMovement(r.kind,r.id)});
+ const debtStatus=(r,next)=>start(async()=>{const fd=new FormData();fd.set('installment_id',r.id);fd.set('status',next);await setDebtInstallmentStatus(fd)});
  return <div className="card movements-card">
   {deleted&&<div className="undo-toast"><span>Movimiento eliminado</span><button onClick={restore} disabled={pending}>Deshacer</button></div>}
   <div className="movement-table"><div className="movement-head"><span>Fecha</span><span>Concepto</span><span>Tipo</span><span>Categoría / origen</span><span>Estado</span><span>Monto</span><span>Acciones</span></div>
