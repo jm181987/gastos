@@ -361,3 +361,21 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
  .finance-item-manage>.guided-form{grid-template-columns:1fr!important}
  .danger-inline,.danger-inline .delete-btn{width:100%!important}
 }
+
+
+/* Pago directo de cuotas */
+.installment-pay-row{grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px}
+.installment-pay{position:relative}
+.installment-pay>summary{list-style:none;cursor:pointer;padding:6px 9px;border:1px solid var(--border);border-radius:8px;font-size:10px;font-weight:800;color:var(--primary);white-space:nowrap}
+.installment-pay>summary::-webkit-details-marker{display:none}
+.installment-pay[open]{grid-column:1/-1;width:100%}
+.installment-pay[open]>summary{width:max-content;margin-left:auto}
+.installment-pay .mini{margin-top:8px;padding:9px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);grid-template-columns:1fr 1fr auto}
+.installment-pay label{display:grid;gap:4px}
+.installment-pay label span{font-size:9px;color:var(--muted);font-weight:700}
+@media(max-width:600px){
+ .installment-pay-row{grid-template-columns:minmax(0,1fr) auto}
+ .installment-pay{grid-column:1/-1;width:100%}
+ .installment-pay>summary{width:100%;text-align:center}
+ .installment-pay .mini{grid-template-columns:1fr}
+}
