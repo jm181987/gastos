@@ -10,7 +10,8 @@ export default function SafeForm({action,className='',children,onSuccess,success
   const fd=new FormData(form);
   start(async()=>{
    try{
-    await action(fd);
+    const result=await action(fd);
+    if(result?.ok===false){setError(result.error||'No se pudo guardar. Revisa los datos e inténtalo nuevamente.');return;}
     setSuccess(successMessage);
     if(onSuccess) onSuccess();
    }catch(err){
