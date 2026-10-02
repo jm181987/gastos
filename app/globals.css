@@ -326,3 +326,14 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
 @media(max-width:700px){
  .admin-user-menu-panel{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;max-height:none!important;overflow:visible!important}
 }
+
+
+/* Selector de tema en acceso */
+.auth-page{position:relative}
+.auth-theme-toggle{position:absolute;top:18px;right:18px;z-index:5}
+.auth-theme-toggle .theme-toggle{box-shadow:0 4px 18px var(--shadow)}
+@media(max-width:560px){
+ .auth-theme-toggle{top:10px;right:10px}
+ .auth-theme-toggle .theme-toggle{width:auto!important;min-width:40px}
+ .auth-card{margin-top:42px}
+}
