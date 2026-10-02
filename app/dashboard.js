@@ -56,7 +56,7 @@ export default async function Dashboard({params,user}){
     COUNT(e.id) FILTER (WHERE e.deleted_at IS NULL) movements
    FROM credit_cards c LEFT JOIN expense e ON e.credit_card_id=c.id AND e.user_id=c.user_id
    WHERE c.user_id=$1 AND c.active=true GROUP BY c.id ORDER BY c.name`,[user.id]),
-  pool.query(`SELECT di.*,d.name debt_name FROM debt_installments di JOIN debts d ON d.id=di.debt_id WHERE d.user_id=$1 ORDER BY di.due_date,di.installment_number`,[user.id])
+  pool.query(`SELECT di.*,d.name debt_name FROM debt_installments di JOIN debts d ON d.id=di.debt_id WHERE d.user_id=$1 AND di.due_date >= $2 AND di.due_date < $3 ORDER BY di.due_date,di.installment_number`,[user.id,from,to])
  ]);
  const allCats=cats.rows.filter(x=>x.active),income=inc.rows.reduce((a,x)=>a+Number(x.amount),0),expense=exp.rows.reduce((a,x)=>a+Number(x.amount),0);
  const paidIncome=inc.rows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0),paidExpense=exp.rows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0);
