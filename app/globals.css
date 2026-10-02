@@ -401,3 +401,5 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
 .debt-installment-group>.installment-stats,.debt-installment-group>.installment-list,.debt-installment-group>.empty-inline{margin-left:12px;margin-right:12px}
 .debt-installment-group>.installment-list{margin-bottom:12px}
 @media(max-width:560px){.debt-installment-group>summary{align-items:flex-start;flex-direction:column}.debt-installment-group>summary>strong{white-space:normal}}
+
+.icon-btn{width:32px;height:32px;min-width:32px;padding:0!important;display:inline-grid!important;place-items:center;border-radius:8px;font-size:16px;line-height:1;cursor:pointer}.icon-btn:disabled{opacity:.35;cursor:default}.row-actions{display:flex;align-items:center;gap:5px;flex-wrap:nowrap}.icon-btn.state-paid{font-weight:900}.icon-btn.state-pending{font-size:18px}.icon-btn.danger-link{font-size:18px}@media(max-width:700px){.icon-btn{width:30px;height:30px;min-width:30px}.row-actions{gap:3px}}
