@@ -388,3 +388,16 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
 .installment-stats b{font-size:16px}
 .installment-stats b span{font-size:10px;color:var(--muted);font-weight:600}
 @media(max-width:480px){.installment-stats{grid-template-columns:1fr}}
+
+
+/* Vista independiente por deuda */
+.debt-installment-groups{display:grid;gap:10px;margin-top:12px}
+.debt-installment-group{border:1px solid var(--border);border-radius:12px;background:var(--surface2);overflow:hidden}
+.debt-installment-group>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;cursor:pointer;list-style:none}
+.debt-installment-group>summary::-webkit-details-marker{display:none}
+.debt-installment-group>summary>span{display:grid;gap:3px}
+.debt-installment-group>summary small{color:var(--muted);font-size:10px}
+.debt-installment-group>summary>strong{font-size:12px;white-space:nowrap}
+.debt-installment-group>.installment-stats,.debt-installment-group>.installment-list,.debt-installment-group>.empty-inline{margin-left:12px;margin-right:12px}
+.debt-installment-group>.installment-list{margin-bottom:12px}
+@media(max-width:560px){.debt-installment-group>summary{align-items:flex-start;flex-direction:column}.debt-installment-group>summary>strong{white-space:normal}}
