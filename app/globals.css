@@ -337,3 +337,27 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
  .auth-theme-toggle .theme-toggle{width:auto!important;min-width:40px}
  .auth-card{margin-top:42px}
 }
+
+
+/* Gestion editable de datos propios */
+.finance-item-manage{width:100%;border-bottom:1px solid var(--border);padding:8px 0}
+.finance-item-manage>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none}
+.finance-item-manage>summary::-webkit-details-marker{display:none}
+.finance-item-manage>summary>span{display:grid;gap:3px;min-width:0}
+.finance-item-manage>summary small{color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+.finance-item-manage>summary i{font-style:normal;color:var(--primary);font-size:10px;font-weight:800}
+.finance-item-manage>.guided-form{margin:10px 0 6px}
+.danger-inline{display:flex;justify-content:flex-end;margin:5px 0}
+.danger-inline .delete-btn{width:auto!important}
+.debt-edit{margin-top:8px;border:0;padding:0}
+.debt-edit>summary{justify-content:flex-start;color:var(--primary);font-size:10px;font-weight:800}
+.editable-tags details{padding:0;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
+.editable-tags details>summary{cursor:pointer;list-style:none;padding:6px 9px;font-size:12px}
+.editable-tags details>summary::-webkit-details-marker{display:none}
+.editable-tags details[open]{flex:1 1 260px;padding:7px}
+.editable-tags details[open]>summary{padding:2px 2px 7px;font-weight:800}
+@media(max-width:560px){
+ .finance-item-manage>summary{align-items:flex-start}
+ .finance-item-manage>.guided-form{grid-template-columns:1fr!important}
+ .danger-inline,.danger-inline .delete-btn{width:100%!important}
+}
