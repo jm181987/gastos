@@ -11,7 +11,7 @@ export default function Movements({income,expenses,debtInstallments=[],categorie
  const restore=()=>deleted&&start(async()=>{await restoreMovement(deleted.kind,deleted.id);setDeleted(null)});
  const duplicate=r=>start(async()=>{await duplicateMovement(r.kind,r.id)});
  const debtStatus=(r,next)=>start(async()=>{const fd=new FormData();fd.set('installment_id',r.id);fd.set('status',next);await setDebtInstallmentStatus(fd)});
- const movementStatus=(r,next)=>start(async()=>{const fd=new FormData();fd.set('id',r.id);fd.set('kind',r.kind);fd.set('status',next);await setMovementStatus(fd)});
+ const movementStatus=(r,next)=>start(async()=>{try{const fd=new FormData();fd.set('id',String(r.id));fd.set('kind',r.kind);fd.set('status',next);const result=await setMovementStatus(fd);if(result?.ok===false)alert(result.error||'No se pudo cambiar el estado')}catch(e){console.error(e);alert('No se pudo cambiar el estado. Intenta nuevamente.')}});
  return <div className="card movements-card">
   {deleted&&<div className="undo-toast"><span>Movimiento eliminado</span><button onClick={restore} disabled={pending}>Deshacer</button></div>}
   <div className="movement-table"><div className="movement-head"><span>Fecha</span><span>Concepto</span><span>Tipo</span><span>Categoría / origen</span><span>Estado</span><span>Monto</span><span>Acciones</span></div>
