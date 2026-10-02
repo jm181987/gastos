@@ -10,7 +10,7 @@ export default function Movements({income,expenses,debtInstallments=[],categorie
  const del=r=>{if(!confirm(`¿Eliminar "${r.concept}"? Podrás deshacerlo.`))return;const fd=new FormData();fd.set('id',r.id);start(async()=>{await (r.kind==='income'?deleteIncome:deleteExpense)(fd);setDeleted(r);setEdit(null)})};
  const restore=()=>deleted&&start(async()=>{await restoreMovement(deleted.kind,deleted.id);setDeleted(null)});
  const duplicate=r=>start(async()=>{await duplicateMovement(r.kind,r.id)});
- const debtStatus=(r,next)=>start(async()=>{const fd=new FormData();fd.set('installment_id',r.id);fd.set('status',next);await setDebtInstallmentStatus(fd)});
+ const debtStatus=(r,next)=>start(async()=>{try{const fd=new FormData();fd.set('installment_id',String(r.id));fd.set('status',next);const result=await setDebtInstallmentStatus(fd);if(result?.ok===false)alert(result.error||'No se pudo cambiar el estado de la cuota')}catch(e){console.error(e);alert('No se pudo cambiar el estado de la cuota. Intenta nuevamente.')}});
  const movementStatus=(r,next)=>start(async()=>{try{const fd=new FormData();fd.set('id',String(r.id));fd.set('kind',r.kind);fd.set('status',next);const result=await setMovementStatus(fd);if(result?.ok===false)alert(result.error||'No se pudo cambiar el estado')}catch(e){console.error(e);alert('No se pudo cambiar el estado. Intenta nuevamente.')}});
  return <div className="card movements-card">
   {deleted&&<div className="undo-toast"><span>Movimiento eliminado</span><button onClick={restore} disabled={pending}>Deshacer</button></div>}
