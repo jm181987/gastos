@@ -408,3 +408,6 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
 
 /* Estado visual de movimientos */
 .movement-row.is-paid{background:rgba(59,130,246,.08);box-shadow:inset 4px 0 0 #3b82f6}.movement-row.is-paid:hover{background:rgba(59,130,246,.13)}.movement-row.is-pending{box-shadow:inset 4px 0 0 rgba(224,163,41,.55)}.status-pill{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:5px 8px;border-radius:999px;font-style:normal;font-size:11px;font-weight:850;white-space:nowrap}.status-pill.paid{color:#60a5fa;background:rgba(59,130,246,.16);border:1px solid rgba(59,130,246,.38)}.status-pill.pending{color:#d9a52b;background:rgba(224,163,41,.12);border:1px solid rgba(224,163,41,.28)}[data-theme="light"] .movement-row.is-paid{background:#eff6ff}[data-theme="light"] .movement-row.is-paid:hover{background:#dbeafe}[data-theme="light"] .status-pill.paid{color:#1d4ed8;background:#dbeafe;border-color:#93c5fd}
+
+/* KPI de gastos ya pagados */
+.kpi-paid{border-color:rgba(59,130,246,.38);background:linear-gradient(135deg,var(--surface),rgba(59,130,246,.10));box-shadow:inset 4px 0 0 #3b82f6,0 3px 14px var(--shadow)}.kpi-paid strong{color:#60a5fa}[data-theme="light"] .kpi-paid{background:linear-gradient(135deg,#fff,#eff6ff)}[data-theme="light"] .kpi-paid strong{color:#1d4ed8}
