@@ -3,7 +3,7 @@ import {useState,useTransition} from 'react';
 import {updateIncome,updateExpense,deleteIncome,deleteExpense,restoreMovement,duplicateMovement,setDebtInstallmentStatus,setMovementStatus} from './actions';
 import SafeForm from './SafeForm';
 const money=n=>new Intl.NumberFormat('es-UY',{style:'currency',currency:'UYU',maximumFractionDigits:0}).format(Number(n||0));
-const dateUY=v=>{const x=String(v||'').slice(0,10),m=x.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return x;return new Intl.DateTimeFormat('es-UY',{weekday:'short',day:'2-digit',month:'short',timeZone:'UTC'}).format(new Date(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3])))).replace(/\./g,'')};
+const dateUY=v=>{const x=String(v||'').slice(0,10),m=x.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return x;const days=['dom','lun','mar','mié','jue','vie','sáb'],months=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'],d=new Date(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3])));return days[d.getUTCDay()]+' '+m[3]+' '+months[Number(m[2])-1]};
 export default function Movements({income,expenses,debtInstallments=[],categories,accounts=[],cards=[],year,month}){
  const debtRows=debtInstallments.map(x=>({id:x.id,kind:'debt',concept:x.debt_name+' · cuota '+x.installment_number,occurred_on:x.due_date,status:x.status==='paid'?'pagado':'pendiente',amount:x.amount,category:'Deuda'}));
  const rows=[...income.map(x=>({...x,kind:'income'})),...expenses.map(x=>({...x,kind:'expense'})),...debtRows].sort((a,b)=>String(b.occurred_on).localeCompare(String(a.occurred_on))||b.id-a.id);
