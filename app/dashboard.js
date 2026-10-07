@@ -72,11 +72,14 @@ export default async function Dashboard({params,user}){
   safeQuery(`SELECT cp.*,c.name card_name FROM card_payments cp JOIN credit_cards c ON c.id=cp.credit_card_id WHERE cp.user_id=$1 ORDER BY cp.year DESC,cp.month DESC LIMIT 36`,[user.id]),
   safeQuery(`SELECT occurred_on date,concept label,amount,'expense' kind FROM expense WHERE user_id=$1 AND deleted_at IS NULL AND status='pendiente' AND occurred_on >= $2::date AND occurred_on < ($2::date + interval '3 months') UNION ALL SELECT due_date date,d.name||' · cuota '||di.installment_number label,di.amount,'debt' kind FROM debt_installments di JOIN debts d ON d.id=di.debt_id WHERE d.user_id=$1 AND di.status='pending' AND di.due_date >= $2::date AND di.due_date < ($2::date + interval '3 months') ORDER BY date`,[user.id,from])
  ]);
- const allCats=cats.rows.filter(x=>x.active),income=inc.rows.reduce((a,x)=>a+Number(x.amount),0),expense=exp.rows.reduce((a,x)=>a+Number(x.amount),0);
- const paidIncome=inc.rows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0),paidExpense=exp.rows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0);
+ const monthIncomeRows=(await pool.query('SELECT amount,status FROM income WHERE user_id=$3 AND deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2',[from,to,user.id])).rows;
+ const monthExpenseRows=(await pool.query('SELECT amount,status FROM expense WHERE user_id=$3 AND deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2',[from,to,user.id])).rows;
+ const allCats=cats.rows.filter(x=>x.active),income=monthIncomeRows.reduce((a,x)=>a+Number(x.amount),0),expense=monthExpenseRows.reduce((a,x)=>a+Number(x.amount),0);
+ const paidIncome=monthIncomeRows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0),paidExpense=monthExpenseRows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0);
  const pendingIncome=income-paidIncome,pendingExpense=expense-paidExpense,projected=paidIncome+pendingIncome-paidExpense-pendingExpense;
  const pi=Number(prevInc.rows[0].total),pe=Number(prevExp.rows[0].total),pct=(a,b)=>b?((a-b)/b*100):0;
- const spendBy=Object.fromEntries(allCats.map(c=>[c.name,exp.rows.filter(x=>x.category===c.name).reduce((a,x)=>a+Number(x.amount),0)]));
+ const fullMonthExpenses=(await pool.query('SELECT category,amount FROM expense WHERE user_id=$3 AND deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2',[from,to,user.id])).rows;
+ const spendBy=Object.fromEntries(allCats.map(c=>[c.name,fullMonthExpenses.filter(x=>x.category===c.name).reduce((a,x)=>a+Number(x.amount),0)]));
  const savingsRate=income>0?(income-expense)/income*100:0;
  const topCategory=Object.entries(spendBy).sort((a,b)=>b[1]-a[1])[0]||['Sin gastos',0];
  const budgetAlerts=budgets.rows.map(b=>({category:b.category,limit:Number(b.amount),spent:Number(spendBy[b.category]||0)})).filter(x=>x.limit>0&&x.spent/x.limit>=.8).sort((a,b)=>(b.spent/b.limit)-(a.spent/a.limit));
