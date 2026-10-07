@@ -4,7 +4,7 @@ import {redirect} from 'next/navigation';
 import {createUser,toggleUser,deleteUser,resetUserPassword,permanentlyDeleteUser,updateUser} from '../auth-actions';
 import ThemeToggle from '../ThemeToggle';
 export const dynamic='force-dynamic';
-const fmt=d=>d?new Date(d).toLocaleString('es-UY'):'Nunca';
+const fmt=d=>d?new Intl.DateTimeFormat('es-UY',{timeZone:'America/Montevideo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(d)):'Nunca';
 export default async function Admin({searchParams}){
  const me=await currentUser();if(!me)redirect('/login');if(me.role!=='admin')redirect('/');
  const sp=await searchParams,q=String(sp?.q||'').trim().toLowerCase(),status=String(sp?.status||'all');
