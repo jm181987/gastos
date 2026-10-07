@@ -28,6 +28,19 @@ export default async function Dashboard({params,user}){
  const from=`${year}-${String(month).padStart(2,'0')}-01`,to=new Date(Date.UTC(year,month,1)).toISOString().slice(0,10);
  const prevDate=new Date(Date.UTC(year,month-2,1)),pf=prevDate.toISOString().slice(0,10),pt=from;
  const q=String(params?.q||'').trim(),cat=String(params?.category||''),status=String(params?.status||'');
+ const safeQuery=async(sql,args=[])=>{try{return await pool.query(sql,args)}catch(e){console.error('Optional finance query failed:',e?.message);return {rows:[]}}};
+ const accountBalancesQuery=(async()=>{try{return await pool.query(`SELECT a.*, a.opening_balance
+    + COALESCE((SELECT SUM(i.amount) FROM income i WHERE i.deleted_at IS NULL AND i.status='pagado' AND i.account_id=a.id),0)
+    - COALESCE((SELECT SUM(e.amount) FROM expense e WHERE e.deleted_at IS NULL AND e.status='pagado' AND e.account_id=a.id AND e.credit_card_id IS NULL),0)
+    - COALESCE((SELECT SUM(cp.amount) FROM card_payments cp WHERE cp.account_id=a.id),0)
+    + COALESCE((SELECT SUM(t.amount) FROM transfers t WHERE t.to_account_id=a.id),0)
+    - COALESCE((SELECT SUM(t.amount) FROM transfers t WHERE t.from_account_id=a.id),0) AS current_balance
+   FROM accounts a WHERE a.user_id=$1 AND a.active=true ORDER BY a.name`,[user.id])}catch(e){console.error('Card payments unavailable in balances:',e?.message);return pool.query(`SELECT a.*, a.opening_balance
+    + COALESCE((SELECT SUM(i.amount) FROM income i WHERE i.deleted_at IS NULL AND i.status='pagado' AND i.account_id=a.id),0)
+    - COALESCE((SELECT SUM(e.amount) FROM expense e WHERE e.deleted_at IS NULL AND e.status='pagado' AND e.account_id=a.id AND e.credit_card_id IS NULL),0)
+    + COALESCE((SELECT SUM(t.amount) FROM transfers t WHERE t.to_account_id=a.id),0)
+    - COALESCE((SELECT SUM(t.amount) FROM transfers t WHERE t.from_account_id=a.id),0) AS current_balance
+   FROM accounts a WHERE a.user_id=$1 AND a.active=true ORDER BY a.name`,[user.id])}})();
  const [inc,exp,prevInc,prevExp,cats,budgets,monthlyBudget,recurring,goals,annual,monthSeries,accounts,cards,debts,tags,closure,accountBalances,cardStatements,debtInstallments,debtPaymentStats,cardPayments,cardMonthItems,cardPaymentHistory,futureCommitments]=await Promise.all([
   pool.query(`SELECT * FROM income WHERE user_id=$5 AND deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2 AND ($3='' OR concept ILIKE '%'||$3||'%') AND ($4='' OR status=$4) ORDER BY occurred_on DESC,id DESC`,[from,to,q,status,user.id]),
   pool.query(`SELECT * FROM expense WHERE user_id=$6 AND deleted_at IS NULL AND occurred_on >= $1 AND occurred_on < $2 AND ($3='' OR concept ILIKE '%'||$3||'%') AND ($4='' OR category=$4) AND ($5='' OR status=$5) ORDER BY occurred_on DESC,id DESC`,[from,to,q,cat,status,user.id]),
@@ -45,13 +58,7 @@ export default async function Dashboard({params,user}){
   pool.query('SELECT * FROM debts WHERE user_id=$1 ORDER BY status,name',[user.id]),
   pool.query('SELECT * FROM tags WHERE user_id=$1 ORDER BY name',[user.id]),
   pool.query('SELECT * FROM monthly_closures WHERE user_id=$3 AND year=$1 AND month=$2',[year,month,user.id]),
-  pool.query(`SELECT a.*, a.opening_balance
-    + COALESCE((SELECT SUM(i.amount) FROM income i WHERE i.deleted_at IS NULL AND i.status='pagado' AND i.account_id=a.id),0)
-    - COALESCE((SELECT SUM(e.amount) FROM expense e WHERE e.deleted_at IS NULL AND e.status='pagado' AND e.account_id=a.id AND e.credit_card_id IS NULL),0)
-    - COALESCE((SELECT SUM(cp.amount) FROM card_payments cp WHERE cp.account_id=a.id),0)
-    + COALESCE((SELECT SUM(t.amount) FROM transfers t WHERE t.to_account_id=a.id),0)
-    - COALESCE((SELECT SUM(t.amount) FROM transfers t WHERE t.from_account_id=a.id),0) AS current_balance
-   FROM accounts a WHERE a.user_id=$1 AND a.active=true ORDER BY a.name`,[user.id]),
+  accountBalancesQuery,
   pool.query(`SELECT c.id,c.name,c.closing_day,c.due_day,c.account_id,c.last_payment_date,
     COALESCE(SUM(CASE WHEN e.deleted_at IS NULL AND e.occurred_on >= $2 AND e.occurred_on < $3 THEN e.amount ELSE 0 END),0) total,
     COALESCE(SUM(CASE WHEN e.deleted_at IS NULL AND e.occurred_on >= $2 AND e.occurred_on < $3 AND e.status='pendiente' THEN e.amount ELSE 0 END),0) pending_total,
@@ -60,10 +67,10 @@ export default async function Dashboard({params,user}){
    WHERE c.user_id=$1 AND c.active=true GROUP BY c.id ORDER BY c.name`,[user.id,from,to]),
   pool.query(`SELECT di.*,d.name debt_name FROM debt_installments di JOIN debts d ON d.id=di.debt_id WHERE d.user_id=$1 AND di.due_date >= $2 AND di.due_date < $3 ORDER BY di.due_date,di.installment_number`,[user.id,from,to]),
   pool.query(`SELECT d.id debt_id,COUNT(di.id) FILTER (WHERE di.status='paid')::int paid_count,COALESCE(SUM(di.amount) FILTER (WHERE di.status='paid'),0) paid_total,COUNT(di.id)::int total_count FROM debts d LEFT JOIN debt_installments di ON di.debt_id=d.id WHERE d.user_id=$1 GROUP BY d.id`,[user.id]),
-  pool.query('SELECT * FROM card_payments WHERE user_id=$1 AND year=$2 AND month=$3',[user.id,year,month]),
+  safeQuery('SELECT * FROM card_payments WHERE user_id=$1 AND year=$2 AND month=$3',[user.id,year,month]),
   pool.query(`SELECT e.id,e.concept,e.amount,e.occurred_on,e.status,e.credit_card_id,e.installment_number,e.installment_total,c.name card_name FROM expense e JOIN credit_cards c ON c.id=e.credit_card_id WHERE e.user_id=$1 AND e.deleted_at IS NULL AND e.occurred_on >= $2 AND e.occurred_on < $3 ORDER BY c.name,e.occurred_on,e.id`,[user.id,from,to]),
-  pool.query(`SELECT cp.*,c.name card_name FROM card_payments cp JOIN credit_cards c ON c.id=cp.credit_card_id WHERE cp.user_id=$1 ORDER BY cp.year DESC,cp.month DESC LIMIT 36`,[user.id]),
-  pool.query(`SELECT occurred_on date,concept label,amount,'expense' kind FROM expense WHERE user_id=$1 AND deleted_at IS NULL AND status='pendiente' AND occurred_on >= $2::date AND occurred_on < ($2::date + interval '3 months') UNION ALL SELECT due_date date,d.name||' · cuota '||di.installment_number label,di.amount,'debt' kind FROM debt_installments di JOIN debts d ON d.id=di.debt_id WHERE d.user_id=$1 AND di.status='pending' AND di.due_date >= $2::date AND di.due_date < ($2::date + interval '3 months') ORDER BY date`,[user.id,from])
+  safeQuery(`SELECT cp.*,c.name card_name FROM card_payments cp JOIN credit_cards c ON c.id=cp.credit_card_id WHERE cp.user_id=$1 ORDER BY cp.year DESC,cp.month DESC LIMIT 36`,[user.id]),
+  safeQuery(`SELECT occurred_on date,concept label,amount,'expense' kind FROM expense WHERE user_id=$1 AND deleted_at IS NULL AND status='pendiente' AND occurred_on >= $2::date AND occurred_on < ($2::date + interval '3 months') UNION ALL SELECT due_date date,d.name||' · cuota '||di.installment_number label,di.amount,'debt' kind FROM debt_installments di JOIN debts d ON d.id=di.debt_id WHERE d.user_id=$1 AND di.status='pending' AND di.due_date >= $2::date AND di.due_date < ($2::date + interval '3 months') ORDER BY date`,[user.id,from])
  ]);
  const allCats=cats.rows.filter(x=>x.active),income=inc.rows.reduce((a,x)=>a+Number(x.amount),0),expense=exp.rows.reduce((a,x)=>a+Number(x.amount),0);
  const paidIncome=inc.rows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0),paidExpense=exp.rows.filter(x=>x.status==='pagado').reduce((a,x)=>a+Number(x.amount),0);
