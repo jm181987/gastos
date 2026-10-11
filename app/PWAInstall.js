@@ -19,7 +19,7 @@ export default function PWAInstall(){
  const dismiss=()=>{setOpen(false);sessionStorage.setItem('knj-pwa-dismissed','1')};
  const help=ios?'En Safari, tocá Compartir y elegí «Agregar a pantalla de inicio».':/Android/i.test(typeof navigator==='undefined'?'':navigator.userAgent)?'En Chrome, abrí el menú ⋮ y elegí «Instalar aplicación» o «Agregar a pantalla principal».':'En Chrome o Edge, buscá el icono de instalación en la barra de direcciones o abrí el menú y elegí «Instalar aplicación».';
  return <div className="pwa-control">
-  <button type="button" className="pwa-launcher" onClick={()=>setOpen(v=>!v)} aria-label={installed?'KNJ Finanzas instalada':'Instalar KNJ Finanzas'}>{installed?'✓ App instalada':'↓ Instalar app'}</button>
+  <button type="button" className="pwa-launcher" onClick={()=>{if(!installed&&deferred)install();else setOpen(v=>!v)}} aria-label={installed?'KNJ Finanzas instalada':deferred?'Instalar KNJ Finanzas':'Cómo instalar KNJ Finanzas'}>{installed?'✓ App instalada':deferred?'↓ Instalar app':'↓ Cómo instalar'}</button>
   {open&&<aside className="pwa-install" role="region" aria-label="Instalar KNJ Finanzas"><button className="pwa-close" type="button" aria-label="Cerrar" onClick={dismiss}>×</button><div><strong>{installed?'KNJ Finanzas instalada':'Instalá KNJ Finanzas'}</strong><p>{installed?'La aplicación está abierta en modo independiente.':deferred?'Accedé a tus finanzas desde el escritorio o pantalla de inicio.':help}</p></div>{!installed&&deferred&&<button className="pwa-install-button" type="button" onClick={install}>Instalar</button>}</aside>}
  </div>
 }
