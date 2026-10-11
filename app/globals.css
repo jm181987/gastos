@@ -445,3 +445,6 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
 /* Encabezados ordenables en Movimientos */
 .sortable-head button{appearance:none;background:none;border:0;padding:0;color:inherit;font:inherit;font-weight:inherit;text-align:left;cursor:pointer;min-width:0}
 .sortable-head button:hover{color:var(--accent)}
+
+/* Instalación PWA */
+.pwa-install{position:fixed;bottom:18px;right:18px;z-index:1200;display:flex;align-items:center;gap:14px;max-width:min(440px,calc(100vw - 32px));padding:17px 40px 17px 17px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,.24)}.pwa-install strong{font-size:15px}.pwa-install p{font-size:12px;color:var(--muted);margin:5px 0 0}.pwa-install-button{background:var(--primary);border:0;color:white;flex-shrink:0}.pwa-close{position:absolute;right:7px;top:6px;border:0;background:transparent;color:var(--muted);min-height:28px;padding:2px 8px;font-size:22px}@media(max-width:600px){.pwa-install{bottom:12px;right:12px;left:12px;max-width:none;flex-wrap:wrap}}
