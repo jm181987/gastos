@@ -207,3 +207,9 @@ package.json         Dependencias y comandos
 ---
 
 Desarrollado por **KNJ** · [Sitio web](https://www.marketingknj.site/)
+
+## Mantenimiento de la documentación
+
+Antes de publicar cambios, comprueba que las migraciones PostgreSQL, las variables de entorno de Vercel y los cálculos de cuotas y balances coincidan con la versión desplegada. Nunca incluyas credenciales ni datos financieros personales en ejemplos o incidencias.
+
+Mantenimiento: **KNJ** · [KNJ Marketing](https://www.marketingknj.site/).
