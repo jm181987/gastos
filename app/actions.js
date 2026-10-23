@@ -67,8 +67,8 @@ export async function copyMonthlyExpenses(fd){
  const client=await pool.connect();
  try{
   await client.query('BEGIN');
-  const src=await client.query('SELECT concept,category,amount,occurred_on,account_id,credit_card_id FROM expense WHERE user_id=$1 AND deleted_at IS NULL AND occurred_on >= $2::date AND occurred_on < $3::date ORDER BY occurred_on,id',[u.id,from,until]);
-  const existing=await client.query('SELECT concept,category,amount,occurred_on,account_id,credit_card_id FROM expense WHERE user_id=$1 AND deleted_at IS NULL AND occurred_on >= $2::date AND occurred_on < $3::date',[u.id,targetFrom,targetUntil]);
+  const src=await client.query('SELECT concept,category,amount,to_char(occurred_on,'YYYY-MM-DD') occurred_on,account_id,credit_card_id FROM expense WHERE user_id=$1 AND deleted_at IS NULL AND occurred_on >= $2::date AND occurred_on < $3::date ORDER BY occurred_on,id',[u.id,from,until]);
+  const existing=await client.query('SELECT concept,category,amount,to_char(occurred_on,'YYYY-MM-DD') occurred_on,account_id,credit_card_id FROM expense WHERE user_id=$1 AND deleted_at IS NULL AND occurred_on >= $2::date AND occurred_on < $3::date',[u.id,targetFrom,targetUntil]);
   const key=(x,d)=>[String(x.concept).trim().toLowerCase(),String(x.category||'').trim().toLowerCase(),Number(x.amount).toFixed(2),d,String(x.account_id||''),String(x.credit_card_id||'')].join('|');
   const present=new Set(existing.rows.map(x=>key(x,String(x.occurred_on).slice(0,10))));
   let copied=0,skipped=0;
