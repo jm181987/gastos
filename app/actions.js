@@ -55,3 +55,35 @@ export async function updateDebt(fd){const u=await requireUser(),id=await owner(
 export async function deleteDebt(fd){const u=await requireUser(),id=await owner('debts',fd.get('id'),u),client=await pool.connect();try{await client.query('BEGIN');await client.query('DELETE FROM debt_installments WHERE debt_id=$1',[id]);await client.query('DELETE FROM debt_payments WHERE debt_id=$1',[id]);await client.query('DELETE FROM debts WHERE id=$1 AND user_id=$2',[id,u.id]);await client.query('COMMIT')}catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}await audit(u.id,'delete','debt',id);done()}
 export async function updateTag(fd){const u=await requireUser(),id=await owner('tags',fd.get('id'),u);await pool.query('UPDATE tags SET name=$1 WHERE id=$2 AND user_id=$3',[required(fd.get('name'),'Etiqueta'),id,u.id]);await audit(u.id,'update','tag',id);done()}
 export async function deleteTag(fd){const u=await requireUser(),id=await owner('tags',fd.get('id'),u),client=await pool.connect();try{await client.query('BEGIN');await client.query('DELETE FROM movement_tags WHERE tag_id=$1',[id]);await client.query('DELETE FROM tags WHERE id=$1 AND user_id=$2',[id,u.id]);await client.query('COMMIT')}catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}await audit(u.id,'delete','tag',id);done()}
+
+/** Copy ordinary expenses into a different month without recording a second payment. */
+export async function copyMonthlyExpenses(fd){
+ const u=await requireUser();
+ const sy=Number(fd.get('source_year')),sm=Number(fd.get('source_month')),ty=Number(fd.get('target_year')),tm=Number(fd.get('target_month'));
+ if(![sy,sm,ty,tm].every(Number.isInteger)||sy<2020||sy>2100||ty<2020||ty>2100||sm<1||sm>12||tm<1||tm>12||(sy===ty&&sm===tm))return {ok:false,error:'Seleccioná dos meses diferentes y válidos.'};
+ if(s(fd.get('confirmation'))!=='COPIAR')return {ok:false,error:'Escribí COPIAR para confirmar.'};
+ const date=(y,m)=>`${y}-${String(m).padStart(2,'0')}-01`;
+ const from=date(sy,sm),until=date(sm===12?sy+1:sy,sm===12?1:sm+1),targetFrom=date(ty,tm),targetUntil=date(tm===12?ty+1:ty,tm===12?1:tm+1);
+ const client=await pool.connect();
+ try{
+  await client.query('BEGIN');
+  const src=await client.query('SELECT concept,category,amount,occurred_on,account_id,credit_card_id FROM expense WHERE user_id=$1 AND deleted_at IS NULL AND occurred_on >= $2::date AND occurred_on < $3::date ORDER BY occurred_on,id',[u.id,from,until]);
+  const existing=await client.query('SELECT concept,category,amount,occurred_on,account_id,credit_card_id FROM expense WHERE user_id=$1 AND deleted_at IS NULL AND occurred_on >= $2::date AND occurred_on < $3::date',[u.id,targetFrom,targetUntil]);
+  const key=(x,d)=>[String(x.concept).trim().toLowerCase(),String(x.category||'').trim().toLowerCase(),Number(x.amount).toFixed(2),d,String(x.account_id||''),String(x.credit_card_id||'')].join('|');
+  const present=new Set(existing.rows.map(x=>key(x,String(x.occurred_on).slice(0,10))));
+  let copied=0,skipped=0;
+  for(const x of src.rows){
+   const day=Number(String(x.occurred_on).slice(8,10));
+   const maxDay=new Date(Date.UTC(ty,tm,0)).getUTCDate();
+   const targetDate=`${ty}-${String(tm).padStart(2,'0')}-${String(Math.min(day,maxDay)).padStart(2,'0')}`;
+   const k=key(x,targetDate);
+   if(present.has(k)){skipped++;continue}
+   await client.query('INSERT INTO expense(concept,category,amount,occurred_on,status,account_id,credit_card_id,user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[x.concept,x.category,x.amount,targetDate,'pendiente',x.account_id,x.credit_card_id,u.id]);
+   present.add(k);copied++;
+  }
+  await client.query('INSERT INTO audit_log(user_id,action,entity,details) VALUES($1,$2,$3,$4::jsonb)',[u.id,'copy_month_expenses','expense',JSON.stringify({source:`${sy}-${sm}`,target:`${ty}-${tm}`,copied,skipped})]);
+  await client.query('COMMIT');
+  revalidatePath('/');
+  return {ok:true,copied,skipped};
+ }catch(e){await client.query('ROLLBACK').catch(()=>{});console.error('copyMonthlyExpenses',e);return {ok:false,error:'No se pudieron copiar los gastos.'}}finally{client.release()}
+}
