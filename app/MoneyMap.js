@@ -1,3 +1,4 @@
+import './money-map.css';
 const fmt=n=>new Intl.NumberFormat('es-UY',{style:'currency',currency:'UYU',maximumFractionDigits:0}).format(Number(n||0));
 const shorten=(s,n=22)=>String(s).length>n?String(s).slice(0,n-1)+'…':String(s);
 export default function MoneyMap({sources=[],destinations=[],year,month}){
