@@ -456,3 +456,6 @@ button,input,select,textarea{font:inherit;max-width:100%;min-width:0}input,selec
 .pwa-control .pwa-launcher{margin:0;max-width:100%;justify-content:center;order:2}
 .pwa-control .pwa-install{position:static!important;inset:auto!important;z-index:auto!important;order:1;margin:0;width:min(440px,100%);max-width:100%;box-sizing:border-box}
 @media(max-width:600px){.pwa-control{position:static!important;inset:auto!important;padding:10px 12px}.pwa-control .pwa-install{position:static!important;inset:auto!important;width:100%;max-width:100%}}
+
+/* Copiar gastos mensuales */
+.movement-copy-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px}.movement-copy-toolbar [role=status]{font-size:13px;color:var(--muted)}.movement-copy-panel{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:14px;margin-bottom:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}.movement-copy-panel p{flex-basis:100%;margin:0;font-size:13px}.movement-copy-panel label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.movement-copy-panel input{max-width:190px}@media(max-width:600px){.movement-copy-panel{align-items:stretch;flex-direction:column}.movement-copy-panel label{justify-content:space-between}.movement-copy-panel input{max-width:100%}}
