@@ -7,7 +7,7 @@ export default function MoneyMap({sources=[],destinations=[],year,month}){
  const compact=(arr,max)=>arr.length<=max?arr:[...arr.slice(0,max-1),{name:'Otras categorías',amount:sum(arr.slice(max-1))}];
  const left=compact(ins,8),right=compact([...outs,...(remaining>0?[{name:'Saldo del período',amount:remaining}]:[])],9);
  const h=Math.max(340,Math.max(left.length,right.length)*47+60),top=36,usable=h-72;
- const layout=(arr,total)=>{let y=top;return arr.map((x,i)=>{const height=Math.max(8,total?x.amount/total*(usable-arr.length*12):8);const node={...x,y,height};y+=height+12;return node})};
+ const layout=(arr,total)=>{let y=top;return arr.map((x,i)=>{const height=34;const node={...x,y,height};y+=height+13;return node})};
  const maxTotal=Math.max(income,expense,1),L=layout(left,maxTotal),R=layout(right,maxTotal);
  const centerY=top+usable/2,centerHeight=Math.max(12,Math.min(usable,income/maxTotal*usable));
  const colors=['#4b9fff','#9d87ff','#2dd4bf','#ffb55a','#f07da3','#76c3ff','#b7d26d','#c99bf5','#fb8878'];
@@ -17,7 +17,7 @@ export default function MoneyMap({sources=[],destinations=[],year,month}){
   {income===0&&expense===0?<p className="muted">Todavía no hay ingresos ni gastos registrados en este mes.</p>:<>
   <div className="money-map-scroll"><svg viewBox={`0 0 1000 ${h}`} role="img" aria-label={`Ingresos ${fmt(income)}, gastos ${fmt(expense)}, resultado ${fmt(remaining)}`} preserveAspectRatio="xMidYMin meet">
    <text x="12" y="20" className="money-map-heading">ORIGEN</text><text x="450" y="20" className="money-map-heading">TOTAL</text><text x="770" y="20" className="money-map-heading">DESTINO</text>
-   {L.map((n,i)=><path key={'in'+i} d={`M 222 ${n.y+n.height/2} C 335 ${n.y+n.height/2}, 355 ${centerY}, 455 ${centerY}`} fill="none" stroke={colors[i%colors.length]} strokeOpacity=".37" strokeWidth={Math.max(2,n.height)} />)}
+   {L.map((n,i)=><path key={'in'+i} d={`M 222 ${n.y+n.height/2} C 335 ${n.y+n.height/2}, 355 ${centerY}, 455 ${centerY}`} fill="none" stroke={colors[i%colors.length]} strokeOpacity=".37" strokeWidth={Math.max(2,n.amount/maxTotal*usable)} />)}
    {R.map((n,i)=><path key={'out'+i} d={`M 545 ${centerY} C 650 ${centerY}, 665 ${n.y+n.height/2}, 770 ${n.y+n.height/2}`} fill="none" stroke={colors[(i+2)%colors.length]} strokeOpacity=".38" strokeWidth={Math.max(2,n.height)}/>)}
    <rect x="455" y={centerY-centerHeight/2} width="90" height={centerHeight} rx="12" fill="#3b82f6" opacity=".9"/>
    <text x="500" y={centerY+4} textAnchor="middle" className="money-map-center">UYU</text>
