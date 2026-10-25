@@ -14,11 +14,12 @@ export default async function AnalyticsPage({searchParams}){
  const category=String(p?.category||''),account=String(p?.account||''),card=String(p?.card||''),status=String(p?.status||'');
  const rangeDays=(Date.parse(end)-Date.parse(start))/86400000;
  if(rangeDays<0||rangeDays>3660)return <main className="wrap"><a href="/analisis">Volver al análisis</a><p>Seleccioná un rango de hasta 10 años.</p></main>;
- const [accounts,cards,categories]=await Promise.all([
+ const metaResults=await Promise.allSettled([
  pool.query('SELECT id,name FROM accounts WHERE user_id=$1 ORDER BY name',[user.id]),
  pool.query('SELECT id,name FROM credit_cards WHERE user_id=$1 ORDER BY name',[user.id]),
  pool.query('SELECT name FROM categories WHERE user_id=$1 ORDER BY name',[user.id])
  ]);
+ const [accounts,cards,categories]=metaResults.map((r,i)=>{if(r.status==='fulfilled')return r.value;console.error('Analytics filter query failed',i,r.reason?.message);return {rows:[]}});
  const opts={start,end,compareStart,compareEnd,category,account,card,status};
  const values=[user.id,start,end,category,account,card,status,compareStart,compareEnd];
  const filter=`user_id=$1 AND deleted_at IS NULL AND occurred_on >= $2::date AND occurred_on < ($3::date + INTERVAL '1 day') AND ($4='' OR category=$4) AND ($5='' OR account_id::text=$5) AND ($6='' OR credit_card_id::text=$6) AND ($7='' OR status=$7)`;
