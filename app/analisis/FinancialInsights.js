@@ -1,5 +1,5 @@
-import './insights.css';
 'use client';
+import './insights.css';
 const money=n=>new Intl.NumberFormat('es-UY',{style:'currency',currency:'UYU',maximumFractionDigits:0}).format(Number(n)||0);
 const sum=a=>a.reduce((s,x)=>s+Number(x.amount||0),0);
 const percent=(v,b)=>b?((v-b)/Math.abs(b)*100):null;
